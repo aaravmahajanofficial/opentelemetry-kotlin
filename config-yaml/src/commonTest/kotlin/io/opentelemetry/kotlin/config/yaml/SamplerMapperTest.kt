@@ -11,6 +11,9 @@ import kotlin.test.assertEquals
 import kotlin.test.assertNull
 
 internal class SamplerMapperTest {
+    /**
+     * Verifies that declaring `always_on: {}` in YAML maps cleanly to [SamplerBehavior.AlwaysOn].
+     */
     @Test
     fun mapsAlwaysOn() {
         assertEquals(
@@ -19,6 +22,9 @@ internal class SamplerMapperTest {
         )
     }
 
+    /**
+     * Verifies that declaring `always_off: {}` in YAML maps cleanly to [SamplerBehavior.AlwaysOff].
+     */
     @Test
     fun mapsAlwaysOff() {
         assertEquals(
@@ -27,6 +33,10 @@ internal class SamplerMapperTest {
         )
     }
 
+    /**
+     * Verifies that `trace_id_ratio_based` with a valid floating-point ratio
+     * correctly preserves that ratio in the Behavior IR.
+     */
     @Test
     fun mapsTraceIdRatioBased() {
         assertEquals(
@@ -35,6 +45,10 @@ internal class SamplerMapperTest {
         )
     }
 
+    /**
+     * Verifies that omitting the ratio (`trace_id_ratio_based: {}`) leaves `ratio = null` in the IR.
+     * The schema default of 1.0 is an SDK runtime default and must not be hardcoded in the behavior layer.
+     */
     @Test
     fun leavesOmittedRatioUnset() {
         assertEquals(
@@ -43,6 +57,10 @@ internal class SamplerMapperTest {
         )
     }
 
+    /**
+     * Boundary test: Verifies that ratio 0.0 is treated as a valid, explicitly configured ratio
+     * (drop all spans) rather than mistakenly being treated as unset or falsey.
+     */
     @Test
     fun preservesARatioOfZero() {
         assertEquals(
@@ -51,6 +69,9 @@ internal class SamplerMapperTest {
         )
     }
 
+    /**
+     * Boundary test: Verifies that ratio 1.0 is treated as an explicitly configured valid upper bound.
+     */
     @Test
     fun preservesARatioOfOne() {
         assertEquals(
@@ -59,6 +80,10 @@ internal class SamplerMapperTest {
         )
     }
 
+    /**
+     * Error-handling test: Verifies that invalid ratios (< 0.0, > 1.0, NaN, Infinity) safely reject
+     * the entire sampler as unset (`null`) instead of crashing or sampling at an erroneous rate.
+     */
     @Test
     fun leavesDisallowedRatioUnset() {
         listOf(-0.1, 1.1, Double.NaN, Double.POSITIVE_INFINITY).forEach { value ->
@@ -69,6 +94,10 @@ internal class SamplerMapperTest {
         }
     }
 
+    /**
+     * Recursion test: Verifies that `parent_based` can contain a nested custom root sampler,
+     * proving that child samplers are recursively evaluated through `.toBehavior()`.
+     */
     @Test
     fun mapsParentBasedWithNestedRoot() {
         val schema = Sampler(
@@ -83,6 +112,10 @@ internal class SamplerMapperTest {
         )
     }
 
+    /**
+     * Field-wiring integrity test: Verifies that all 5 distinct delegates of `ParentBased` are correctly
+     * mapped to their corresponding IR fields without copy-paste or swapped-parameter bugs.
+     */
     @Test
     fun mapsEveryParentBasedChild() {
         val schema = Sampler(
@@ -107,6 +140,10 @@ internal class SamplerMapperTest {
         )
     }
 
+    /**
+     * Verifies that declaring `parent_based: {}` is recognized as explicitly choosing the ParentBased
+     * strategy, while leaving all 5 sub-delegates unset (`null`) so SDK defaults can apply at runtime.
+     */
     @Test
     fun emptyParentBasedLeavesChildrenUnset() {
         assertEquals(
@@ -115,11 +152,18 @@ internal class SamplerMapperTest {
         )
     }
 
+    /**
+     * Verifies that an empty `sampler: {}` block (no sampler specified) cleanly evaluates to unset (`null`).
+     */
     @Test
     fun leavesOmittedSamplerUnset() {
         assertNull(Sampler().toBehavior())
     }
 
+    /**
+     * One-of validation test: Verifies that if YAML contains 2 or more conflicting sampler keys,
+     * the mapper safely degrades to unset (`null`) rather than crashing the application.
+     */
     @Test
     fun leavesMultipleSamplersUnset() {
         assertNull(
