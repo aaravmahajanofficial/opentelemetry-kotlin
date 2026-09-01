@@ -1,6 +1,10 @@
 package io.opentelemetry.kotlin.init
 
 import io.opentelemetry.kotlin.Clock
+import io.opentelemetry.kotlin.behavior.OpenTelemetryBehavior
+import io.opentelemetry.kotlin.behavior.TracerProviderBehavior
+import io.opentelemetry.kotlin.config.envar.EnvVarReader
+import io.opentelemetry.kotlin.config.envar.tracing.SamplerEnvVars
 import io.opentelemetry.kotlin.error.GuardedSdkErrorHandler
 import io.opentelemetry.kotlin.error.NoopSdkErrorHandler
 import io.opentelemetry.kotlin.error.SdkErrorHandler
@@ -8,6 +12,8 @@ import io.opentelemetry.kotlin.factory.IdGenerator
 import io.opentelemetry.kotlin.factory.IdGeneratorImpl
 import io.opentelemetry.kotlin.factory.ResourceFactory
 import io.opentelemetry.kotlin.factory.ResourceFactoryImpl
+import io.opentelemetry.kotlin.getEnvVarValue
+import io.opentelemetry.kotlin.init.config.TracingConfig
 import io.opentelemetry.kotlin.propagation.TextMapPropagator
 import io.opentelemetry.kotlin.resource.detectResource
 import kotlin.concurrent.Volatile
@@ -31,6 +37,8 @@ internal class OpenTelemetryConfigImpl(
     internal val metricsConfig: MeterProviderConfigImpl = MeterProviderConfigImpl(sdkErrorHandler)
     internal val contextConfig: ContextConfigImpl = ContextConfigImpl()
     internal val propagatorCfg: PropagatorConfigImpl = PropagatorConfigImpl()
+    internal var getEnvVar: (String) -> String? = ::getEnvVarValue
+    internal var declarativeFileBehavior: OpenTelemetryBehavior? = null
     private val globalAttributeLimits = AttributeLimitsConfigImpl()
     private val resourceDetectionConfig = ResourceDetectionConfigImpl()
 
@@ -39,6 +47,7 @@ internal class OpenTelemetryConfigImpl(
     override fun configFile(path: String) {
         // no-op
     }
+
 
     override fun attributeLimits(action: AttributeLimitsConfigDsl.() -> Unit) {
         globalAttributeLimits.action()
@@ -84,8 +93,20 @@ internal class OpenTelemetryConfigImpl(
             .merge(globalResourceConfig.generateResource())
     }
 
-    internal fun generateTracingConfig() =
-        tracingConfig.generateTracingConfig(baseResource, globalAttributeLimits)
+    internal fun generateTracingConfig(): TracingConfig {
+        tracingConfig.applyResolvedSampler(
+            envVars = envSamplerLayer(),
+            declarativeFile = declarativeFileBehavior
+        )
+        return tracingConfig.generateTracingConfig(baseResource, globalAttributeLimits)
+    }
+
+    private fun envSamplerLayer(): OpenTelemetryBehavior? {
+        val sampler = SamplerEnvVars(EnvVarReader(getEnvVar)).toBehavior() ?: return null
+        return OpenTelemetryBehavior(
+            tracerProvider = TracerProviderBehavior(sampler = sampler)
+        )
+    }
 
     internal fun generateLoggingConfig() =
         loggingConfig.generateLoggingConfig(baseResource, globalAttributeLimits)
