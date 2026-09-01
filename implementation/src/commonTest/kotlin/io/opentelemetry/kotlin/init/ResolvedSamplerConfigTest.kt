@@ -2,6 +2,8 @@ package io.opentelemetry.kotlin.init
 
 import io.opentelemetry.kotlin.attributes.AttributesModel
 import io.opentelemetry.kotlin.behavior.OpenTelemetryBehavior
+import io.opentelemetry.kotlin.behavior.SamplerBehavior
+import io.opentelemetry.kotlin.behavior.TracerProviderBehavior
 import io.opentelemetry.kotlin.clock.FakeClock
 import io.opentelemetry.kotlin.factory.ContextFactoryImpl
 import io.opentelemetry.kotlin.factory.IdGeneratorImpl
@@ -61,6 +63,10 @@ internal class ResolvedSamplerConfigTest {
         links = emptyList()
     ).decision
 
+    private fun fileSampler(sampler: SamplerBehavior) = OpenTelemetryBehavior(
+        tracerProvider = TracerProviderBehavior(sampler = sampler)
+    )
+
     /**
      * When nothing is configured, the SDK must keep its standard default
      * (ParentBased with AlwaysOn root).
@@ -118,9 +124,45 @@ internal class ResolvedSamplerConfigTest {
         assertSame(custom, sampler)
     }
 
+    /**
+     * A declarative file layer with AlwaysOff overrides the SDK default.
+     */
+    @Test
+    fun declarativeFileSamplerIsAppliedWhenDslOmitsSampler() {
+        val sampler = samplerOf(declarativeFile = fileSampler(SamplerBehavior.AlwaysOff))
+        assertEquals("AlwaysOffSampler", sampler.description)
+        assertEquals(Decision.DROP, sampler.shouldSampleRoot())
+    }
 
+    /**
+     * Per the OpenTelemetry spec, the presence of a declarative file
+     * (even empty) drops environment variables wholesale (File > Env).
+     */
+    @Test
+    fun emptyDeclarativeFileReplacesEnvSampler() {
+        val sampler = samplerOf(
+            getEnvVar = env("always_off"),
+            declarativeFile = OpenTelemetryBehavior()
+        )
+        val parentBased = assertIs<ParentBasedSampler>(sampler)
+        assertContains(parentBased.description, "root:AlwaysOnSampler")
+        assertEquals(Decision.RECORD_AND_SAMPLE, sampler.shouldSampleRoot())
+    }
 
-
+    /**
+     * Precedence Check: Programmatic DSL sampler { alwaysOn() } beats BOTH
+     * a declarative file and environment variables (DSL > File > Env).
+     */
+    @Test
+    fun dslSamplerWinsOverDeclarativeFile() {
+        val sampler = samplerOf(
+            getEnvVar = env("always_off"),
+            declarativeFile = fileSampler(SamplerBehavior.AlwaysOff)
+        ) {
+            sampler { alwaysOn() }
+        }
+        assertEquals("AlwaysOnSampler", sampler.description)
+    }
 
     private companion object {
         val ZERO_TRACE_ID = "00000000000000000000000000000000".hexToByteArray()
