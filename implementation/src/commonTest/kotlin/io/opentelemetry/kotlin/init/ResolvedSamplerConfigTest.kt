@@ -82,6 +82,7 @@ internal class ResolvedSamplerConfigTest {
      * Environment variable OTEL_TRACES_SAMPLER=always_off overrides
      * the SDK default when DSL is omitted.
      */
+    @Test
     fun envAlwaysOffIsAppliedWhenDslOmitsSampler() {
         val sampler = samplerOf(getEnvVar = env("always_off"))
         assertEquals("AlwaysOffSampler", sampler.description)
