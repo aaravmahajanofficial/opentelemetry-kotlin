@@ -14,6 +14,7 @@ import io.opentelemetry.kotlin.tracing.sampling.FakeSampler
 import io.opentelemetry.kotlin.tracing.sampling.ParentBasedSampler
 import io.opentelemetry.kotlin.tracing.sampling.Sampler
 import io.opentelemetry.kotlin.tracing.sampling.SamplingResult.Decision
+import io.opentelemetry.kotlin.tracing.sampling.TraceIdRatioBasedSampler
 import io.opentelemetry.kotlin.tracing.sampling.alwaysOn
 import kotlin.test.Test
 import kotlin.test.assertContains
@@ -94,7 +95,7 @@ internal class ResolvedSamplerConfigTest {
     @Test
     fun envTraceIdRatioZeroDrops() {
         val sampler = samplerOf(getEnvVar = env("traceidratio", "0"))
-        assertEquals("TraceIdRatioBasedSampler{0.0}", sampler.description)
+        assertEquals(TraceIdRatioBasedSampler(0.0).description, sampler.description)
         assertEquals(Decision.DROP, sampler.shouldSampleRoot())
     }
 
