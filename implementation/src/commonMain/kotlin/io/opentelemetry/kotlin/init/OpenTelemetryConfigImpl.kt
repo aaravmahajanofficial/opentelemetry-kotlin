@@ -7,7 +7,10 @@ import io.opentelemetry.kotlin.config.envar.EnvVarReader
 import io.opentelemetry.kotlin.config.envar.tracing.SamplerEnvVars
 import io.opentelemetry.kotlin.error.GuardedSdkErrorHandler
 import io.opentelemetry.kotlin.error.NoopSdkErrorHandler
+import io.opentelemetry.kotlin.error.SdkError
 import io.opentelemetry.kotlin.error.SdkErrorHandler
+import io.opentelemetry.kotlin.error.SdkErrorSeverity
+import io.opentelemetry.kotlin.error.reportError
 import io.opentelemetry.kotlin.factory.IdGenerator
 import io.opentelemetry.kotlin.factory.IdGeneratorImpl
 import io.opentelemetry.kotlin.factory.ResourceFactory
@@ -102,7 +105,15 @@ internal class OpenTelemetryConfigImpl(
     }
 
     private fun envSamplerLayer(): OpenTelemetryBehavior? {
-        val sampler = SamplerEnvVars(EnvVarReader(getEnvVar)).toBehavior() ?: return null
+        val sampler = SamplerEnvVars(EnvVarReader(getEnvVar)) { message ->
+            sdkErrorHandler.reportError(
+                SdkError.ApiMisuse(
+                    api = "OTEL_TRACES_SAMPLER",
+                    message = message,
+                    severity = SdkErrorSeverity.WARNING,
+                )
+            )
+        }.toBehavior() ?: return null
         return OpenTelemetryBehavior(
             tracerProvider = TracerProviderBehavior(sampler = sampler)
         )
