@@ -24,6 +24,16 @@ internal class SamplerEnvVarsTest {
     }
 
     @Test
+    fun `should map sampler names case-insensitively`() {
+        assertEquals(SamplerBehavior.AlwaysOn, toBehavior(env("ALWAYS_ON")))
+        assertEquals(SamplerBehavior.AlwaysOff, toBehavior(env("Always_Off")))
+        assertEquals(
+            SamplerBehavior.TraceIdRatioBased(ratio = 0.25),
+            toBehavior(env("TraceIdRatio", "0.25")),
+        )
+    }
+
+    @Test
     fun `should map traceidratio with a ratio arg`() {
         assertEquals(
             SamplerBehavior.TraceIdRatioBased(ratio = 0.25),
@@ -83,7 +93,7 @@ internal class SamplerEnvVarsTest {
 
     @Test
     fun `should leave unknown sampler unset`() {
-        listOf("jaeger_remote", "parentbased_jaeger_remote", "xray", "ALWAYS_ON", "").forEach { name ->
+        listOf("sampler_test", "").forEach { name ->
             assertNull(toBehavior(env(name)), "<$name> should not configure a sampler")
         }
     }
@@ -91,15 +101,36 @@ internal class SamplerEnvVarsTest {
     @Test
     fun `should leave invalid ratio arg unset`() {
         listOf("invalid", "", "-0.1", "1.1", "NaN").forEach { arg ->
-            assertNull(
+            assertEquals(
+                SamplerBehavior.TraceIdRatioBased(ratio = null),
                 toBehavior(env("traceidratio", arg)),
-                "<$arg> should not configure a sampler",
+                "<$arg> should ignore ARG",
             )
-            assertNull(
+            assertEquals(
+                SamplerBehavior.ParentBased(root = SamplerBehavior.TraceIdRatioBased(ratio = null)),
                 toBehavior(env("parentbased_traceidratio", arg)),
-                "<$arg> should not configure a parentbased sampler",
+                "<$arg> should ignore ARG on parentbased",
             )
         }
+    }
+
+    @Test
+    fun `should warn on unknown sampler`() {
+        val warnings = mutableListOf<String>()
+        SamplerEnvVars(EnvVarReader(env("not_a_sampler")), warnings::add).toBehavior()
+        assertEquals(1, warnings.size)
+    }
+    @Test
+    fun `should warn on invalid ratio arg`() {
+        val warnings = mutableListOf<String>()
+        SamplerEnvVars(EnvVarReader(env("traceidratio", "nope")), warnings::add).toBehavior()
+        assertEquals(1, warnings.size)
+    }
+    @Test
+    fun `should not warn when sampler is unset`() {
+        val warnings = mutableListOf<String>()
+        SamplerEnvVars(EnvVarReader { null }, warnings::add).toBehavior()
+        assertEquals(emptyList(), warnings)
     }
 
     private fun env(sampler: String, arg: String? = null): (String) -> String? {
