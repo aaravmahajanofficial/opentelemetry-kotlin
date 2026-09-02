@@ -142,7 +142,7 @@ internal class TraceIdRatioBasedSamplerTest {
      */
     @Test
     fun rejectsRatioOutsideUnitInterval() {
-        listOf(-0.1, 1.1, Double.NaN).forEach { ratio ->
+        listOf(-0.1, 1.1, Double.NaN, Double.POSITIVE_INFINITY).forEach { ratio ->
             assertFailsWith<IllegalArgumentException> {
                 samplerDsl.traceIdRatioBased(ratio)
             }
