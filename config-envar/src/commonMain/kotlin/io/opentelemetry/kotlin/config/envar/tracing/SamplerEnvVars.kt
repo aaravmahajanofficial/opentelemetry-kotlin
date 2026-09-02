@@ -3,7 +3,6 @@ package io.opentelemetry.kotlin.config.envar.tracing
 import io.opentelemetry.kotlin.ExperimentalApi
 import io.opentelemetry.kotlin.behavior.SamplerBehavior
 import io.opentelemetry.kotlin.config.envar.EnvVarReader
-import io.opentelemetry.kotlin.config.envar.model.EnvVarName.Companion.envVarName
 
 /**
  * Maps `OTEL_TRACES_SAMPLER` and `OTEL_TRACES_SAMPLER_ARG` onto behavior.
@@ -45,8 +44,8 @@ class SamplerEnvVars(
     }
 
     private companion object {
-        val SAMPLER = envVarName("OTEL_TRACES_SAMPLER")
-        val SAMPLER_ARG = envVarName("OTEL_TRACES_SAMPLER_ARG")
+        const val SAMPLER = "OTEL_TRACES_SAMPLER"
+        const val SAMPLER_ARG = "OTEL_TRACES_SAMPLER_ARG"
         const val ALWAYS_ON = "always_on"
         const val ALWAYS_OFF = "always_off"
         const val TRACE_ID_RATIO = "traceidratio"
