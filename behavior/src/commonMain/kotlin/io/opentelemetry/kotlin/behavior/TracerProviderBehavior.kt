@@ -24,6 +24,7 @@ data class TracerProviderBehavior(
      * Sampler the tracer provider should use.
      */
     val sampler: SamplerBehavior? = null,
+
 ) : Behavior<TracerProviderBehavior> {
 
     override fun mergeWith(higher: TracerProviderBehavior): TracerProviderBehavior = copy(
