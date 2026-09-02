@@ -118,11 +118,11 @@ internal class SamplerBehaviorMappingTest {
         val sampler = samplerDsl.toSampler(SamplerBehavior.ParentBased())
         assertEquals(
             "ParentBased{" +
-                    "root:AlwaysOnSampler," +
-                    "remoteParentSampled:AlwaysOnSampler," +
-                    "remoteParentNotSampled:AlwaysOffSampler," +
-                    "localParentSampled:AlwaysOnSampler," +
-                    "localParentNotSampled:AlwaysOffSampler" + "}",
+                "root:AlwaysOnSampler," +
+                "remoteParentSampled:AlwaysOnSampler," +
+                "remoteParentNotSampled:AlwaysOffSampler," +
+                "localParentSampled:AlwaysOnSampler," +
+                "localParentNotSampled:AlwaysOffSampler" + "}",
             sampler.description
         )
     }
@@ -146,11 +146,12 @@ internal class SamplerBehaviorMappingTest {
         )
         assertEquals(
             "ParentBased{" +
-                    "root:AlwaysOffSampler," +
-                    "remoteParentSampled:AlwaysOnSampler," +
-                    "remoteParentNotSampled:AlwaysOffSampler," +
-                    "localParentSampled:AlwaysOnSampler," +
-                    "localParentNotSampled:AlwaysOffSampler" + "}", sampler.description
+                "root:AlwaysOffSampler," +
+                "remoteParentSampled:AlwaysOnSampler," +
+                "remoteParentNotSampled:AlwaysOffSampler," +
+                "localParentSampled:AlwaysOnSampler," +
+                "localParentNotSampled:AlwaysOffSampler" + "}",
+            sampler.description
         )
     }
 
@@ -182,13 +183,15 @@ internal class SamplerBehaviorMappingTest {
         )
 
         assertEquals(
-            (samplerDsl.parentBased(
-                root = samplerDsl.alwaysOff(),
-                remoteParentSampled = samplerDsl.alwaysOn(),
-                remoteParentNotSampled = samplerDsl.alwaysOff(),
-                localParentSampled = samplerDsl.alwaysOn(),
-                localParentNotSampled = samplerDsl.alwaysOff()
-            ).description),
+            (
+                samplerDsl.parentBased(
+                    root = samplerDsl.alwaysOff(),
+                    remoteParentSampled = samplerDsl.alwaysOn(),
+                    remoteParentNotSampled = samplerDsl.alwaysOff(),
+                    localParentSampled = samplerDsl.alwaysOn(),
+                    localParentNotSampled = samplerDsl.alwaysOff()
+                ).description
+                ),
             sampler.description
         )
     }
