@@ -49,5 +49,6 @@ public fun createCompatOpenTelemetry(
         idGenerator = resolvedIdGenerator,
         resource = CompatResourceFactory,
         propagator = cfg.propagatorCfg.buildPropagator(),
+        sdkErrorHandler = cfg.sdkErrorHandler,
     )
 }
