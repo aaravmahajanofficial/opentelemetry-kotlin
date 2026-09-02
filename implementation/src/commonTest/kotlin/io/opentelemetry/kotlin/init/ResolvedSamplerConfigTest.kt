@@ -50,7 +50,9 @@ internal class ResolvedSamplerConfigTest {
     private fun env(sampler: String, arg: String? = null): (String) -> String? {
         val values = buildMap {
             put("OTEL_TRACES_SAMPLER", sampler)
-            if (arg != null) put("OTEL_TRACES_SAMPLER_ARG", arg)
+            if (arg != null) {
+                put("OTEL_TRACES_SAMPLER_ARG", arg)
+            }
         }
         return values::get
     }
@@ -169,5 +171,4 @@ internal class ResolvedSamplerConfigTest {
     private companion object {
         val ZERO_TRACE_ID = "00000000000000000000000000000000".hexToByteArray()
     }
-
 }
