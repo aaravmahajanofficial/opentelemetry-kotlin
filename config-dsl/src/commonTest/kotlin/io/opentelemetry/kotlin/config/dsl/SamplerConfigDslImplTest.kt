@@ -16,7 +16,7 @@ internal class SamplerConfigDslImplTest {
     fun mapsAlwaysOn() {
         val dsl = SamplerConfigDslImpl()
         dsl.alwaysOn()
-        assertEquals(SamplerBehavior.AlwaysOn, SamplerConfigDslImpl().alwaysOn())
+        assertEquals(SamplerBehavior.AlwaysOn, dsl.toBehavior())
     }
 
     @Test
