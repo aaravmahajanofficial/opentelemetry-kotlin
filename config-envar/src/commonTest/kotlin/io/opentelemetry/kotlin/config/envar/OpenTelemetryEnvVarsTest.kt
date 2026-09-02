@@ -4,6 +4,7 @@ import io.opentelemetry.kotlin.behavior.AttributeLimitsBehavior
 import io.opentelemetry.kotlin.behavior.LogLimitsBehavior
 import io.opentelemetry.kotlin.behavior.LoggerProviderBehavior
 import io.opentelemetry.kotlin.behavior.OpenTelemetryBehavior
+import io.opentelemetry.kotlin.behavior.SamplerBehavior
 import io.opentelemetry.kotlin.behavior.SpanLimitsBehavior
 import io.opentelemetry.kotlin.behavior.TracerProviderBehavior
 import kotlin.test.Test
@@ -24,6 +25,8 @@ internal class OpenTelemetryEnvVarsTest {
             "OTEL_LINK_ATTRIBUTE_COUNT_LIMIT" to "8",
             "OTEL_LOGRECORD_ATTRIBUTE_COUNT_LIMIT" to "9",
             "OTEL_LOGRECORD_ATTRIBUTE_VALUE_LENGTH_LIMIT" to "10",
+            "OTEL_TRACES_SAMPLER" to "traceidratio",
+            "OTEL_TRACES_SAMPLER_ARG" to "0.25",
         )
 
         val expected = OpenTelemetryBehavior(
@@ -40,6 +43,7 @@ internal class OpenTelemetryEnvVarsTest {
                     attributeCountPerEventLimit = 7,
                     attributeCountPerLinkLimit = 8,
                 ),
+                sampler = SamplerBehavior.TraceIdRatioBased(ratio = 0.25)
             ),
             loggerProvider = LoggerProviderBehavior(
                 logLimits = LogLimitsBehavior(
@@ -59,6 +63,20 @@ internal class OpenTelemetryEnvVarsTest {
             loggerProvider = LoggerProviderBehavior(logLimits = LogLimitsBehavior()),
         )
         assertEquals(expected, toBehavior { null })
+    }
+
+    @Test
+    fun `should map sampler env vars`() {
+        val env = mapOf(
+            "OTEL_TRACES_SAMPLER" to "always_off",
+        )
+        val behavior = toBehavior(env::get)
+        assertEquals(SamplerBehavior.AlwaysOff, behavior.tracerProvider?.sampler)
+    }
+
+    @Test
+    fun `should leave sampler unset when OTEL_TRACES_SAMPLER is unset`() {
+        assertEquals(null, toBehavior { null }.tracerProvider?.sampler)
     }
 
     private fun toBehavior(getEnvVar: (String) -> String?) =
