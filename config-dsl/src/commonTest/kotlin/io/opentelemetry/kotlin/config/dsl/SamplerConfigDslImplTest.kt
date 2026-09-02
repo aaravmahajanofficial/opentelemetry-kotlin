@@ -99,7 +99,8 @@ internal class SamplerConfigDslImplTest {
                 remoteParentNotSampled = SamplerBehavior.AlwaysOff,
                 localParentSampled = SamplerBehavior.AlwaysOn,
                 localParentNotSampled = SamplerBehavior.AlwaysOff,
-            ), dsl.toBehavior()
+            ),
+            dsl.toBehavior()
         )
     }
 
