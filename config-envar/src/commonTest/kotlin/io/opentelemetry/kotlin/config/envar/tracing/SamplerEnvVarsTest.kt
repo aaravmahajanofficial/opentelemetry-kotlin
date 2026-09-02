@@ -120,12 +120,14 @@ internal class SamplerEnvVarsTest {
         SamplerEnvVars(EnvVarReader(env("not_a_sampler")), warnings::add).toBehavior()
         assertEquals(1, warnings.size)
     }
+
     @Test
     fun `should warn on invalid ratio arg`() {
         val warnings = mutableListOf<String>()
         SamplerEnvVars(EnvVarReader(env("traceidratio", "nope")), warnings::add).toBehavior()
         assertEquals(1, warnings.size)
     }
+
     @Test
     fun `should not warn when sampler is unset`() {
         val warnings = mutableListOf<String>()
@@ -136,13 +138,13 @@ internal class SamplerEnvVarsTest {
     private fun env(sampler: String, arg: String? = null): (String) -> String? {
         val values = buildMap {
             put("OTEL_TRACES_SAMPLER", sampler)
-            if (arg != null) put("OTEL_TRACES_SAMPLER_ARG", arg)
+            if (arg != null) {
+                put("OTEL_TRACES_SAMPLER_ARG", arg)
+            }
         }
         return values::get
     }
 
-
     private fun toBehavior(getEnvVar: (String) -> String?) =
         SamplerEnvVars(EnvVarReader(getEnvVar)).toBehavior()
-
 }
