@@ -154,7 +154,21 @@ internal class ResolvedSamplerConfigTest {
     }
 
     /**
-     * Precedence Check: Programmatic DSL sampler { alwaysOn() } beats BOTH
+     * Non-empty declarative file with AlwaysOff beats OTEL_TRACES_SAMPLER=always_on
+     * when DSL omits sampler (File > Env).
+     */
+    @Test
+    fun declarativeFileBeatsEnvWhenDslOmitsSampler() {
+        val sampler = samplerOf(
+            getEnvVar = env("always_on"),
+            declarativeFile = fileSampler(SamplerBehavior.AlwaysOff),
+        )
+        assertEquals("AlwaysOffSampler", sampler.description)
+        assertEquals(Decision.DROP, sampler.shouldSampleRoot())
+    }
+
+    /**
+     * Programmatic DSL sampler { alwaysOn() } beats BOTH
      * a declarative file and environment variables (DSL > File > Env).
      */
     @Test
