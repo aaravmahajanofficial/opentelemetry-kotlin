@@ -16,6 +16,11 @@ data class TracerProviderBehavior(
     val spanLimits: SpanLimitsBehavior? = null,
 
     /**
+     * Processor used by the tracer provider.
+     */
+    val processor: SpanProcessorBehavior? = null,
+
+    /**
      * Sampler the tracer provider should use.
      */
     val sampler: SamplerBehavior? = null,
@@ -23,6 +28,7 @@ data class TracerProviderBehavior(
 
     override fun mergeWith(higher: TracerProviderBehavior): TracerProviderBehavior = copy(
         spanLimits = mergeNode(spanLimits, higher.spanLimits),
+        processor = mergeNode(processor, higher.processor),
         sampler = mergeNode(sampler, higher.sampler)
     )
 }
