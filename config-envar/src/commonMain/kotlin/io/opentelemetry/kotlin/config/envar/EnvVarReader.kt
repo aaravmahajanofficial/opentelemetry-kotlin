@@ -1,7 +1,6 @@
 package io.opentelemetry.kotlin.config.envar
 
 import io.opentelemetry.kotlin.ExperimentalApi
-import io.opentelemetry.kotlin.config.envar.model.EnvVarName
 
 /**
  * Reads environment variables, turning each raw value into the type the configuration expects.
@@ -16,20 +15,18 @@ class EnvVarReader(private val getEnvVar: (String) -> String?) {
     /**
      * Returns the value of [name] as an [Int], or `null` if it is unset or is not an [Int].
      */
-    fun readInt(name: EnvVarName): Int? = read(name)?.toIntOrNull()
-
-    /**
-     * Returns the value of [name] as a [String], or `null` if it is unset.
-     */
-    fun readString(name: EnvVarName): String? = read(name)
+    fun readInt(name: String): Int? = readString(name)?.toIntOrNull()
 
     /**
      * Returns the value of [name] as a [Double], or `null` if it is unset or is not a [Double].
      */
-    fun readDouble(name: EnvVarName): Double? = read(name)?.toDoubleOrNull()
+    fun readDouble(name: String): Double? = readString(name)?.toDoubleOrNull()
 
-    private fun read(name: EnvVarName): String? = try {
-        getEnvVar(name.value)
+    /**
+     * Returns the value of [name], or `null` if it is unset or could not be read.
+     */
+    fun readString(name: String): String? = try {
+        getEnvVar(name)
     } catch (_: Throwable) {
         null
     }
