@@ -12,6 +12,8 @@ kotlin {
         val commonMain by getting {
             dependencies {
                 implementation(project(":sdk-api"))
+                api(libs.kotlinx.coroutines)
+                api(libs.okio)
             }
         }
         val commonTest by getting {
