@@ -5,6 +5,9 @@ import io.opentelemetry.kotlin.behavior.OpenTelemetryBehavior
 import io.opentelemetry.kotlin.behavior.SamplerBehavior
 import io.opentelemetry.kotlin.behavior.TracerProviderBehavior
 import io.opentelemetry.kotlin.clock.FakeClock
+import io.opentelemetry.kotlin.error.FakeSdkErrorHandler
+import io.opentelemetry.kotlin.error.SdkErrorHandler
+import io.opentelemetry.kotlin.error.SdkErrorSeverity
 import io.opentelemetry.kotlin.factory.ContextFactoryImpl
 import io.opentelemetry.kotlin.factory.IdGeneratorImpl
 import io.opentelemetry.kotlin.factory.SpanContextFactoryImpl
@@ -34,18 +37,23 @@ internal class ResolvedSamplerConfigTest {
     private fun tracingConfig(
         getEnvVar: (String) -> String? = { null },
         declarativeFile: OpenTelemetryBehavior? = null,
+        errorHandler: SdkErrorHandler? = null,
         configure: TracerProviderConfigDsl.() -> Unit,
     ) = OpenTelemetryConfigImpl(clock).apply {
         this.getEnvVar = getEnvVar
         this.declarativeFileBehavior = declarativeFile
+        if (errorHandler != null) {
+            errorHandler(errorHandler)
+        }
         tracerProvider(configure)
     }.generateTracingConfig()
 
     private fun samplerOf(
         getEnvVar: (String) -> String? = { null },
         declarativeFile: OpenTelemetryBehavior? = null,
+        errorHandler: SdkErrorHandler? = null,
         configure: TracerProviderConfigDsl.() -> Unit = {},
-    ) = tracingConfig(getEnvVar, declarativeFile, configure).samplerFactory(spanFactory)
+    ) = tracingConfig(getEnvVar, declarativeFile, errorHandler, configure).samplerFactory(spanFactory)
 
     private fun env(sampler: String, arg: String? = null): (String) -> String? {
         val values = buildMap {
@@ -189,6 +197,29 @@ internal class ResolvedSamplerConfigTest {
         )
         assertEquals("AlwaysOffSampler", sampler.description)
         assertEquals(Decision.DROP, sampler.shouldSampleRoot())
+    }
+
+    /**
+     * Unknown OTEL_TRACES_SAMPLER is reported via SdkErrorHandler and leaves the
+     * SDK default (ParentBased with AlwaysOn root).
+     */
+    @Test
+    fun invalidEnvSamplerReportsWarningAndKeepsDefault() {
+        val handler = FakeSdkErrorHandler()
+        val sampler = samplerOf(
+            getEnvVar = env("not_a_sampler"),
+            errorHandler = handler,
+        )
+
+        val parentBased = assertIs<ParentBasedSampler>(sampler)
+        assertContains(parentBased.description, "root:AlwaysOnSampler")
+        assertEquals(Decision.RECORD_AND_SAMPLE, sampler.shouldSampleRoot())
+        assertEquals(1, handler.apiMisuses.size)
+
+        val misuse = handler.apiMisuses.single()
+        assertEquals("OTEL_TRACES_SAMPLER", misuse.api)
+        assertContains(misuse.message, "not_a_sampler")
+        assertEquals(SdkErrorSeverity.WARNING, misuse.severity)
     }
 
     /**

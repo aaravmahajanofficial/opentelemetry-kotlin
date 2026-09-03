@@ -8,7 +8,10 @@ import io.opentelemetry.kotlin.behavior.SamplerBehavior
 import io.opentelemetry.kotlin.behavior.SpanLimitsBehavior
 import io.opentelemetry.kotlin.behavior.TracerProviderBehavior
 import kotlin.test.Test
+import kotlin.test.assertContains
 import kotlin.test.assertEquals
+import kotlin.test.assertNull
+import kotlin.test.assertTrue
 
 internal class OpenTelemetryEnvVarsTest {
 
@@ -62,7 +65,7 @@ internal class OpenTelemetryEnvVarsTest {
             tracerProvider = TracerProviderBehavior(spanLimits = SpanLimitsBehavior()),
             loggerProvider = LoggerProviderBehavior(logLimits = LogLimitsBehavior()),
         )
-        assertEquals(expected, toBehavior { null })
+        assertEquals(expected, toBehavior({ null }))
     }
 
     @Test
@@ -76,9 +79,45 @@ internal class OpenTelemetryEnvVarsTest {
 
     @Test
     fun `should leave sampler unset when OTEL_TRACES_SAMPLER is unset`() {
-        assertEquals(null, toBehavior { null }.tracerProvider?.sampler)
+        assertNull(toBehavior({ null }).tracerProvider?.sampler)
     }
 
-    private fun toBehavior(getEnvVar: (String) -> String?) =
-        OpenTelemetryEnvVars(EnvVarReader(getEnvVar)).toBehavior()
+    @Test
+    fun `should forward onSamplerWarning for unknown sampler`() {
+        val warnings = mutableListOf<String>()
+        toBehavior(env("not_a_sampler"), warnings::add)
+        assertEquals(1, warnings.size)
+        assertContains(warnings.single(), "not_a_sampler")
+    }
+
+    @Test
+    fun `should forward onSamplerWarning for invalid ratio arg`() {
+        val warnings = mutableListOf<String>()
+        toBehavior(env("traceidratio", "nope"), warnings::add)
+        assertEquals(1, warnings.size)
+        assertContains(warnings.single(), "nope")
+    }
+
+    @Test
+    fun `should not warn when sampler is unset`() {
+        val warnings = mutableListOf<String>()
+        toBehavior({ null }, warnings::add)
+        assertTrue(warnings.isEmpty())
+    }
+
+    private fun env(sampler: String, arg: String? = null): (String) -> String? {
+        val values = buildMap {
+            put("OTEL_TRACES_SAMPLER", sampler)
+            if (arg != null) {
+                put("OTEL_TRACES_SAMPLER_ARG", arg)
+            }
+        }
+        return values::get
+    }
+
+    private fun toBehavior(
+        getEnvVar: (String) -> String?,
+        onSamplerWarning: (String) -> Unit = {},
+    ): OpenTelemetryBehavior =
+        OpenTelemetryEnvVars(EnvVarReader(getEnvVar), onSamplerWarning).toBehavior()
 }
