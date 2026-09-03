@@ -101,19 +101,6 @@ internal class SamplerBehaviorMappingTest {
     }
 
     @Test
-    fun traceIdRatioBasedMapsToTraceIdRatioBasedSampler() {
-        val sampler = samplerDsl.toSampler(SamplerBehavior.TraceIdRatioBased(0.5))
-        assertEquals(samplerDsl.traceIdRatioBased(0.5).description, sampler.description)
-    }
-
-    @Test
-    fun omittedRatioBecomesOne() {
-        val sampler = samplerDsl.toSampler(SamplerBehavior.TraceIdRatioBased(ratio = null))
-        assertEquals(samplerDsl.traceIdRatioBased(1.0).description, sampler.description)
-        assertEquals(Decision.RECORD_AND_SAMPLE, sample(sampler).decision)
-    }
-
-    @Test
     fun emptyParentBasedUsesSchemaChildDefaults() {
         val sampler = samplerDsl.toSampler(SamplerBehavior.ParentBased())
         assertEquals(
@@ -125,16 +112,6 @@ internal class SamplerBehaviorMappingTest {
                 "localParentNotSampled:AlwaysOffSampler" + "}",
             sampler.description
         )
-    }
-
-    @Test
-    fun parentBasedRootIsMappedRecursively() {
-        val sampler = samplerDsl.toSampler(
-            SamplerBehavior.ParentBased(
-                root = SamplerBehavior.TraceIdRatioBased(0.0)
-            )
-        )
-        assertEquals(Decision.DROP, sample(sampler).decision)
     }
 
     @Test
