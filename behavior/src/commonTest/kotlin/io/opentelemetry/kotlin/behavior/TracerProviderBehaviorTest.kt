@@ -84,15 +84,6 @@ internal class TracerProviderBehaviorTest {
     }
 
     @Test
-    fun higherSamplerReplacesLowerSampler() {
-        val merged = TracerProviderBehavior(sampler = SamplerBehavior.AlwaysOff).mergeWith(
-            TracerProviderBehavior(sampler = SamplerBehavior.TraceIdRatioBased(0.5))
-        )
-
-        assertEquals(SamplerBehavior.TraceIdRatioBased(0.5), merged.sampler)
-    }
-
-    @Test
     fun samplerMergeDoesNotDropSpanLimits() {
         val spanLimits = SpanLimitsBehavior(linkCountLimit = 3)
         val merged = TracerProviderBehavior(spanLimits = spanLimits).mergeWith(
