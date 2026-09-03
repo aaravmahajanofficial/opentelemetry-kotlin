@@ -16,6 +16,35 @@ import kotlin.test.assertTrue
 internal class OpenTelemetryEnvVarsTest {
 
     @Test
+    fun emptyEnv() {
+        val behavior = behaviorFrom(emptyMap())
+        assertEquals(AttributeLimitsBehavior(), behavior.attributeLimits)
+        assertEquals(LogLimitsBehavior(), behavior.loggerProvider?.logLimits)
+    }
+
+    @Test
+    fun globalAndLogRecordLimits() {
+        val behavior = behaviorFrom(
+            mapOf(
+                "OTEL_ATTRIBUTE_COUNT_LIMIT" to "64",
+                "OTEL_ATTRIBUTE_VALUE_LENGTH_LIMIT" to "256",
+                "OTEL_LOGRECORD_ATTRIBUTE_COUNT_LIMIT" to "8",
+            )
+        )
+        assertEquals(
+            AttributeLimitsBehavior(attributeCountLimit = 64, attributeValueLengthLimit = 256),
+            behavior.attributeLimits,
+        )
+        assertEquals(8, behavior.loggerProvider?.logLimits?.attributeCountLimit)
+    }
+
+    @Test
+    fun disallowedValueUnset() {
+        val behavior = behaviorFrom(mapOf("OTEL_ATTRIBUTE_COUNT_LIMIT" to "-1"))
+        assertNull(behavior.attributeLimits?.attributeCountLimit)
+    }
+
+    @Test
     fun `should read every node from its own env vars`() {
         val env = mapOf(
             "OTEL_ATTRIBUTE_COUNT_LIMIT" to "1",
@@ -93,6 +122,9 @@ internal class OpenTelemetryEnvVarsTest {
         toBehavior({ null }, warnings::add)
         assertTrue(warnings.isEmpty())
     }
+
+    private fun behaviorFrom(vars: Map<String, String>) =
+        OpenTelemetryEnvVars(EnvVarReader { vars[it] }).toBehavior()
 
     private fun env(sampler: String): (String) -> String? {
         val values = buildMap {

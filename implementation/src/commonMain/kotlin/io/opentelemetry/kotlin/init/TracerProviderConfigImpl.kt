@@ -3,6 +3,7 @@ package io.opentelemetry.kotlin.init
 import io.opentelemetry.kotlin.Clock
 import io.opentelemetry.kotlin.attributes.DEFAULT_ATTRIBUTE_LIMIT
 import io.opentelemetry.kotlin.attributes.DEFAULT_ATTRIBUTE_VALUE_LENGTH_LIMIT
+import io.opentelemetry.kotlin.behavior.AttributeLimitsBehavior
 import io.opentelemetry.kotlin.behavior.BehaviorResolverImpl
 import io.opentelemetry.kotlin.behavior.OpenTelemetryBehavior
 import io.opentelemetry.kotlin.error.SdkError
@@ -65,7 +66,10 @@ internal class TracerProviderConfigImpl(
         tracerConfigurator = configurator
     }
 
-    fun generateTracingConfig(base: Resource, globalLimits: AttributeLimitsConfigDsl? = null): TracingConfig = TracingConfig(
+    fun generateTracingConfig(
+        base: Resource,
+        globalLimits: AttributeLimitsBehavior,
+    ): TracingConfig = TracingConfig(
         processor = processor,
         spanLimits = generateSpanLimitsConfig(globalLimits),
         resource = base.merge(resourceConfigImpl.generateResource()),
@@ -94,15 +98,15 @@ internal class TracerProviderConfigImpl(
      * A limit left unset by the span limits falls back to the global attribute limits, then to the
      * default this SDK applies. Only the attribute limits are configurable globally.
      */
-    private fun generateSpanLimitsConfig(globalLimits: AttributeLimitsConfigDsl?): SpanLimitConfig {
+    private fun generateSpanLimitsConfig(globalLimits: AttributeLimitsBehavior): SpanLimitConfig {
         val impl = SpanLimitsConfigImpl()
         spanLimitsAction(impl)
         return SpanLimitConfig(
             attributeCountLimit = impl.attributeCountLimit
-                ?: globalLimits?.attributeCountLimit
+                ?: globalLimits.attributeCountLimit
                 ?: DEFAULT_ATTRIBUTE_LIMIT,
             attributeValueLengthLimit = impl.attributeValueLengthLimit
-                ?: globalLimits?.attributeValueLengthLimit
+                ?: globalLimits.attributeValueLengthLimit
                 ?: DEFAULT_ATTRIBUTE_VALUE_LENGTH_LIMIT,
             linkCountLimit = impl.linkCountLimit ?: DEFAULT_LINK_LIMIT,
             eventCountLimit = impl.eventCountLimit ?: DEFAULT_EVENT_LIMIT,
