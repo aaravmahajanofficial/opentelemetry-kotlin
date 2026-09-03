@@ -7,7 +7,6 @@ sealed class SamplerBehavior : Behavior<SamplerBehavior> {
 
     data object AlwaysOn : SamplerBehavior()
     data object AlwaysOff : SamplerBehavior()
-    data class TraceIdRatioBased(val ratio: Double? = null) : SamplerBehavior()
 
     data class ParentBased(
         val root: SamplerBehavior? = null,
