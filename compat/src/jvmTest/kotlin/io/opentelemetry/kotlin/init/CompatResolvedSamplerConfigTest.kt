@@ -12,6 +12,7 @@ import io.opentelemetry.kotlin.tracing.sampling.FakeSampler
 import io.opentelemetry.kotlin.tracing.sampling.SamplingResult
 import io.opentelemetry.kotlin.tracing.sampling.alwaysOn
 import kotlin.test.Test
+import kotlin.test.assertContains
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
@@ -186,10 +187,11 @@ internal class CompatResolvedSamplerConfigTest {
 
         assertTrue(span.isRecording())
         assertTrue(span.spanContext.traceFlags.isSampled)
-
         assertEquals(1, handler.apiMisuses.size)
+
         val misuse = handler.apiMisuses.single()
         assertEquals("OTEL_TRACES_SAMPLER", misuse.api)
+        assertContains(misuse.message, "not_a_sampler")
         assertEquals(SdkErrorSeverity.WARNING, misuse.severity)
     }
 }
