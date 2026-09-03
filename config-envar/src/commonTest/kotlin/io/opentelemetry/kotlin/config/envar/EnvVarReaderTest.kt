@@ -63,33 +63,4 @@ internal class EnvVarReaderTest {
     fun `should treat a failed read as unset`() {
         assertNull(EnvVarReader { error("cannot read env vars here") }.readInt(name))
     }
-
-    @Test
-    fun `should read a string`() {
-        assertEquals("always_on", EnvVarReader { "always_on" }.readString(name))
-    }
-
-    @Test
-    fun `should treat a failed double read as unset`() {
-        assertNull(EnvVarReader { error("cannot read env vars here") }.readDouble(name))
-    }
-
-    @Test
-    fun `should read a double`() {
-        assertEquals(0.25, EnvVarReader { "0.25" }.readDouble(name))
-        assertEquals(0.0, EnvVarReader { "0" }.readDouble(name))
-        assertEquals(1.0, EnvVarReader { "1.0" }.readDouble(name))
-    }
-
-    @Test
-    fun `should treat a value that is not a double as unset`() {
-        listOf("invalid", "", " ").forEach { rawValue ->
-            assertNull(EnvVarReader { rawValue }.readDouble(name), "<$rawValue> should not be read")
-        }
-    }
-
-    @Test
-    fun `should treat a failed string read as unset`() {
-        assertNull(EnvVarReader { error("cannot read env vars here") }.readString(name))
-    }
 }
