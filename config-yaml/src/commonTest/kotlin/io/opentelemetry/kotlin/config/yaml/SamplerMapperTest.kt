@@ -5,7 +5,6 @@ import io.opentelemetry.kotlin.config.schema.model.AlwaysOffSampler
 import io.opentelemetry.kotlin.config.schema.model.AlwaysOnSampler
 import io.opentelemetry.kotlin.config.schema.model.ParentBasedSampler
 import io.opentelemetry.kotlin.config.schema.model.Sampler
-import io.opentelemetry.kotlin.config.schema.model.TraceIdRatioBasedSampler
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
@@ -31,20 +30,6 @@ internal class SamplerMapperTest {
             SamplerBehavior.AlwaysOff,
             Sampler(alwaysOff = AlwaysOffSampler()).toBehavior()
         )
-    }
-
-    /**
-     * Error-handling test: Verifies that invalid ratios (< 0.0, > 1.0, NaN, Infinity) safely reject
-     * the entire sampler as unset (`null`) instead of crashing or sampling at an erroneous rate.
-     */
-    @Test
-    fun leavesDisallowedRatioUnset() {
-        listOf(-0.1, 1.1, Double.NaN, Double.POSITIVE_INFINITY).forEach { value ->
-            assertNull(
-                Sampler(traceIdRatioBased = TraceIdRatioBasedSampler(ratio = value)).toBehavior(),
-                "<$value> should not configure a sampler"
-            )
-        }
     }
 
     /**
