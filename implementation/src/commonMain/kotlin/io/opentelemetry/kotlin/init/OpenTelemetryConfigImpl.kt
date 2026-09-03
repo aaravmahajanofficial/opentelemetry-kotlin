@@ -2,9 +2,8 @@ package io.opentelemetry.kotlin.init
 
 import io.opentelemetry.kotlin.Clock
 import io.opentelemetry.kotlin.behavior.OpenTelemetryBehavior
-import io.opentelemetry.kotlin.behavior.TracerProviderBehavior
 import io.opentelemetry.kotlin.config.envar.EnvVarReader
-import io.opentelemetry.kotlin.config.envar.tracing.SamplerEnvVars
+import io.opentelemetry.kotlin.config.envar.OpenTelemetryEnvVars
 import io.opentelemetry.kotlin.error.GuardedSdkErrorHandler
 import io.opentelemetry.kotlin.error.NoopSdkErrorHandler
 import io.opentelemetry.kotlin.error.SdkError
@@ -98,25 +97,10 @@ internal class OpenTelemetryConfigImpl(
 
     internal fun generateTracingConfig(): TracingConfig {
         tracingConfig.applyResolvedSampler(
-            envVars = envSamplerLayer(),
-            declarativeFile = declarativeFileBehavior
+            envVars = envBehaviorLayer(),
+            declarativeFile = declarativeFileBehavior,
         )
         return tracingConfig.generateTracingConfig(baseResource, globalAttributeLimits)
-    }
-
-    private fun envSamplerLayer(): OpenTelemetryBehavior? {
-        val sampler = SamplerEnvVars(EnvVarReader(getEnvVar)) { message ->
-            sdkErrorHandler.reportError(
-                SdkError.ApiMisuse(
-                    api = "OTEL_TRACES_SAMPLER",
-                    message = message,
-                    severity = SdkErrorSeverity.WARNING,
-                )
-            )
-        }.toBehavior() ?: return null
-        return OpenTelemetryBehavior(
-            tracerProvider = TracerProviderBehavior(sampler = sampler)
-        )
     }
 
     internal fun generateLoggingConfig() =
@@ -124,4 +108,18 @@ internal class OpenTelemetryConfigImpl(
 
     internal fun generateMetricsConfig() =
         metricsConfig.generateMetricsConfig(baseResource)
+
+    private fun envBehaviorLayer(): OpenTelemetryBehavior =
+        OpenTelemetryEnvVars(
+            EnvVarReader(getEnvVar),
+            onSamplerWarning = { message ->
+                sdkErrorHandler.reportError(
+                    SdkError.ApiMisuse(
+                        api = "OTEL_TRACES_SAMPLER",
+                        message = message,
+                        severity = SdkErrorSeverity.WARNING,
+                    )
+                )
+            },
+        ).toBehavior()
 }

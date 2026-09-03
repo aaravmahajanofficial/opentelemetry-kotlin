@@ -92,6 +92,30 @@ internal class ResolvedSamplerConfigTest {
     }
 
     /**
+     * Environment variable OTEL_TRACES_SAMPLER=parentbased_always_on applies a
+     * ParentBasedSampler with AlwaysOn root sampler when DSL omits sampler.
+     */
+    @Test
+    fun envParentBasedAlwaysOnIsAppliedWhenDslOmitsSampler() {
+        val sampler = assertIs<ParentBasedSampler>(samplerOf(getEnvVar = env("parentbased_always_on")))
+        assertContains(sampler.description, "root:AlwaysOnSampler")
+        assertEquals(Decision.RECORD_AND_SAMPLE, sampler.shouldSampleRoot())
+    }
+
+    /**
+     * OTEL_TRACES_SAMPLER=parentbased_traceidratio with ARG=0 materializes a
+     * ParentBasedSampler with TraceIdRatioBased root sampler and drops root spans.
+     */
+    @Test
+    fun envParentBasedTraceIdRatioZeroDrops() {
+        val sampler = assertIs<ParentBasedSampler>(
+            samplerOf(getEnvVar = env("parentbased_traceidratio", "0"))
+        )
+        assertContains(sampler.description, "root:TraceIdRatioBased")
+        assertEquals(Decision.DROP, sampler.shouldSampleRoot())
+    }
+
+    /**
      * OTEL_TRACES_SAMPLER=traceidratio with ARG=0 materializes
      * TraceIdRatioBasedSampler(0.0) and drops root spans.
      */
