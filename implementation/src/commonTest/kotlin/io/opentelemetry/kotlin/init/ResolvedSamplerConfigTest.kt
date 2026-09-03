@@ -52,14 +52,13 @@ internal class ResolvedSamplerConfigTest {
         declarativeFile: OpenTelemetryBehavior? = null,
         errorHandler: SdkErrorHandler? = null,
         configure: TracerProviderConfigDsl.() -> Unit = {},
-    ) = tracingConfig(getEnvVar, declarativeFile, errorHandler, configure).samplerFactory(spanFactory)
+    ) = tracingConfig(getEnvVar, declarativeFile, errorHandler, configure).samplerFactory(
+        spanFactory
+    )
 
-    private fun env(sampler: String, arg: String? = null): (String) -> String? {
+    private fun env(sampler: String): (String) -> String? {
         val values = buildMap {
             put("OTEL_TRACES_SAMPLER", sampler)
-            if (arg != null) {
-                put("OTEL_TRACES_SAMPLER_ARG", arg)
-            }
         }
         return values::get
     }
@@ -104,7 +103,8 @@ internal class ResolvedSamplerConfigTest {
      */
     @Test
     fun envParentBasedAlwaysOnIsAppliedWhenDslOmitsSampler() {
-        val sampler = assertIs<ParentBasedSampler>(samplerOf(getEnvVar = env("parentbased_always_on")))
+        val sampler =
+            assertIs<ParentBasedSampler>(samplerOf(getEnvVar = env("parentbased_always_on")))
         assertContains(sampler.description, "root:AlwaysOnSampler")
         assertEquals(Decision.RECORD_AND_SAMPLE, sampler.shouldSampleRoot())
     }
