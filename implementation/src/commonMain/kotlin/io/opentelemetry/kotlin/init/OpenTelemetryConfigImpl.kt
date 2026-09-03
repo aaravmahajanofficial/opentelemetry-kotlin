@@ -1,7 +1,11 @@
 package io.opentelemetry.kotlin.init
 
 import io.opentelemetry.kotlin.Clock
+import io.opentelemetry.kotlin.behavior.AttributeLimitsBehavior
+import io.opentelemetry.kotlin.behavior.BehaviorResolver
+import io.opentelemetry.kotlin.behavior.BehaviorResolverImpl
 import io.opentelemetry.kotlin.behavior.OpenTelemetryBehavior
+import io.opentelemetry.kotlin.config.dsl.AttributeLimitsConfigDslImpl
 import io.opentelemetry.kotlin.config.envar.EnvVarReader
 import io.opentelemetry.kotlin.config.envar.OpenTelemetryEnvVars
 import io.opentelemetry.kotlin.error.GuardedSdkErrorHandler
@@ -41,7 +45,8 @@ internal class OpenTelemetryConfigImpl(
     internal val propagatorCfg: PropagatorConfigImpl = PropagatorConfigImpl()
     internal var getEnvVar: (String) -> String? = ::getEnvVarValue
     internal var declarativeFileBehavior: OpenTelemetryBehavior? = null
-    private val globalAttributeLimits = AttributeLimitsConfigImpl()
+    private val globalAttributeLimits = AttributeLimitsConfigDslImpl()
+    private val behaviorResolver: BehaviorResolver = BehaviorResolverImpl()
     private val resourceDetectionConfig = ResourceDetectionConfigImpl()
 
     private var customIdGenerator: (() -> IdGenerator)? = null
@@ -49,7 +54,6 @@ internal class OpenTelemetryConfigImpl(
     override fun configFile(path: String) {
         // no-op
     }
-
 
     override fun attributeLimits(action: AttributeLimitsConfigDsl.() -> Unit) {
         globalAttributeLimits.action()
@@ -95,16 +99,29 @@ internal class OpenTelemetryConfigImpl(
             .merge(globalResourceConfig.generateResource())
     }
 
+    /**
+     * Resolves the behavior the SDK is initialized with, applying the precedence rules the resolver
+     * defines. Environment variables and declarative configuration are not wired up yet.
+     */
+    private fun resolveBehavior(): OpenTelemetryBehavior = behaviorResolver.resolve(
+        envars = null,
+        declarativeFile = null,
+        dsl = OpenTelemetryBehavior(attributeLimits = globalAttributeLimits.toBehavior()),
+    )
+
+    private fun resolveAttributeLimits(): AttributeLimitsBehavior =
+        resolveBehavior().attributeLimits ?: AttributeLimitsBehavior()
+
     internal fun generateTracingConfig(): TracingConfig {
         tracingConfig.applyResolvedSampler(
             envVars = envBehaviorLayer(),
             declarativeFile = declarativeFileBehavior,
         )
-        return tracingConfig.generateTracingConfig(baseResource, globalAttributeLimits)
+        return tracingConfig.generateTracingConfig(baseResource, resolveAttributeLimits())
     }
 
     internal fun generateLoggingConfig() =
-        loggingConfig.generateLoggingConfig(baseResource, globalAttributeLimits)
+        loggingConfig.generateLoggingConfig(baseResource, resolveAttributeLimits())
 
     internal fun generateMetricsConfig() =
         metricsConfig.generateMetricsConfig(baseResource)
