@@ -17,7 +17,6 @@ import io.opentelemetry.kotlin.tracing.sampling.FakeSampler
 import io.opentelemetry.kotlin.tracing.sampling.ParentBasedSampler
 import io.opentelemetry.kotlin.tracing.sampling.Sampler
 import io.opentelemetry.kotlin.tracing.sampling.SamplingResult.Decision
-import io.opentelemetry.kotlin.tracing.sampling.TraceIdRatioBasedSampler
 import io.opentelemetry.kotlin.tracing.sampling.alwaysOn
 import kotlin.test.Test
 import kotlin.test.assertContains
@@ -120,17 +119,6 @@ internal class ResolvedSamplerConfigTest {
             samplerOf(getEnvVar = env("parentbased_traceidratio", "0"))
         )
         assertContains(sampler.description, "root:TraceIdRatioBased")
-        assertEquals(Decision.DROP, sampler.shouldSampleRoot())
-    }
-
-    /**
-     * OTEL_TRACES_SAMPLER=traceidratio with ARG=0 materializes
-     * TraceIdRatioBasedSampler(0.0) and drops root spans.
-     */
-    @Test
-    fun envTraceIdRatioZeroDrops() {
-        val sampler = samplerOf(getEnvVar = env("traceidratio", "0"))
-        assertEquals(TraceIdRatioBasedSampler(0.0).description, sampler.description)
         assertEquals(Decision.DROP, sampler.shouldSampleRoot())
     }
 

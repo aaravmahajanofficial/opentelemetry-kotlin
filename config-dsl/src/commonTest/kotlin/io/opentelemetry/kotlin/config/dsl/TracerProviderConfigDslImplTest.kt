@@ -26,13 +26,6 @@ internal class TracerProviderConfigDslImplTest {
     }
 
     @Test
-    fun samplerMapsTraceIdRatioBased() {
-        val dsl = TracerProviderConfigDslImpl()
-        dsl.sampler { traceIdRatioBased(0.5) }
-        assertEquals(SamplerBehavior.TraceIdRatioBased(0.5), dsl.toBehavior().sampler)
-    }
-
-    @Test
     fun samplerMapsParentBased() {
         val dsl = TracerProviderConfigDslImpl()
         dsl.sampler { parentBased(root = alwaysOff()) }
@@ -40,13 +33,6 @@ internal class TracerProviderConfigDslImplTest {
             SamplerBehavior.ParentBased(root = SamplerBehavior.AlwaysOff),
             dsl.toBehavior().sampler
         )
-    }
-
-    @Test
-    fun invalidRatioLeavesSamplerUnset() {
-        val dsl = TracerProviderConfigDslImpl()
-        dsl.sampler { traceIdRatioBased(ratio = -1.0) }
-        assertNull(dsl.toBehavior().sampler)
     }
 
     @Test

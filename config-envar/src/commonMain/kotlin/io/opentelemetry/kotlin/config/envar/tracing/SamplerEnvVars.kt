@@ -21,10 +21,8 @@ class SamplerEnvVars(
         return when (name.lowercase()) {
             ALWAYS_ON -> SamplerBehavior.AlwaysOn
             ALWAYS_OFF -> SamplerBehavior.AlwaysOff
-            TRACE_ID_RATIO -> ratioBased()
             PARENT_BASED_ALWAYS_ON -> SamplerBehavior.ParentBased(root = SamplerBehavior.AlwaysOn)
             PARENT_BASED_ALWAYS_OFF -> SamplerBehavior.ParentBased(root = SamplerBehavior.AlwaysOff)
-            PARENT_BASED_TRACE_ID_RATIO -> SamplerBehavior.ParentBased(root = ratioBased())
             else -> {
                 onWarning("Unknown OTEL_TRACES_SAMPLER value '$name'; ignoring")
                 null
@@ -32,25 +30,11 @@ class SamplerEnvVars(
         }
     }
 
-    private fun ratioBased(): SamplerBehavior.TraceIdRatioBased {
-        val raw = reader.readString(SAMPLER_ARG) ?: return SamplerBehavior.TraceIdRatioBased()
-        if (raw.isEmpty()) return SamplerBehavior.TraceIdRatioBased()
-        val ratio = raw.toDoubleOrNull()?.takeIf { it in 0.0..1.0 }
-        if (ratio == null) {
-            onWarning("Invalid OTEL_TRACES_SAMPLER_ARG '$raw'; ignoring argument")
-            return SamplerBehavior.TraceIdRatioBased()
-        }
-        return SamplerBehavior.TraceIdRatioBased(ratio)
-    }
-
     private companion object {
         const val SAMPLER = "OTEL_TRACES_SAMPLER"
-        const val SAMPLER_ARG = "OTEL_TRACES_SAMPLER_ARG"
         const val ALWAYS_ON = "always_on"
         const val ALWAYS_OFF = "always_off"
-        const val TRACE_ID_RATIO = "traceidratio"
         const val PARENT_BASED_ALWAYS_ON = "parentbased_always_on"
         const val PARENT_BASED_ALWAYS_OFF = "parentbased_always_off"
-        const val PARENT_BASED_TRACE_ID_RATIO = "parentbased_traceidratio"
     }
 }
