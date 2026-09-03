@@ -4,12 +4,16 @@ import io.opentelemetry.kotlin.behavior.OpenTelemetryBehavior
 import io.opentelemetry.kotlin.behavior.SamplerBehavior
 import io.opentelemetry.kotlin.behavior.TracerProviderBehavior
 import io.opentelemetry.kotlin.clock.FakeClock
+import io.opentelemetry.kotlin.error.FakeSdkErrorHandler
+import io.opentelemetry.kotlin.error.SdkErrorHandler
+import io.opentelemetry.kotlin.error.SdkErrorSeverity
 import io.opentelemetry.kotlin.factory.CompatIdGenerator
 import io.opentelemetry.kotlin.tracing.sampling.FakeSampler
 import io.opentelemetry.kotlin.tracing.sampling.SamplingResult
 import io.opentelemetry.kotlin.tracing.sampling.alwaysOn
-import junit.framework.TestCase.assertFalse
 import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 internal class CompatResolvedSamplerConfigTest {
@@ -20,10 +24,14 @@ internal class CompatResolvedSamplerConfigTest {
     private fun startSpan(
         getEnvVar: (String) -> String? = { null },
         declarativeFile: OpenTelemetryBehavior? = null,
+        errorHandler: SdkErrorHandler? = null,
         configure: TracerProviderConfigDsl.() -> Unit = {},
     ) = CompatOpenTelemetryConfig(clock).apply {
         this.getEnvVar = getEnvVar
         this.declarativeFileBehavior = declarativeFile
+        if (errorHandler != null) {
+            errorHandler(errorHandler)
+        }
         tracerProvider(configure)
         applyResolvedSampler()
     }.tracerProviderConfig.build(clock, idGenerator)
@@ -71,6 +79,22 @@ internal class CompatResolvedSamplerConfigTest {
     fun envSamplerNameIsCaseInsensitive() {
         val span = startSpan(getEnvVar = env("ALWAYS_OFF"))
         assertFalse(span.isRecording())
+    }
+
+    /** OTEL_TRACES_SAMPLER=parentbased_always_on applies ParentBased(AlwaysOn root). */
+    @Test
+    fun envParentBasedAlwaysOnIsAppliedWhenDslOmitsSampler() {
+        val span = startSpan(getEnvVar = env("parentbased_always_on"))
+        assertTrue(span.isRecording())
+        assertTrue(span.spanContext.traceFlags.isSampled)
+    }
+
+    /** parentbased_traceidratio + ARG=0 drops roots. */
+    @Test
+    fun envParentBasedTraceIdRatioZeroDrops() {
+        val span = startSpan(getEnvVar = env("parentbased_traceidratio", "0"))
+        assertFalse(span.isRecording())
+        assertFalse(span.spanContext.traceFlags.isSampled)
     }
 
     /**
@@ -127,6 +151,17 @@ internal class CompatResolvedSamplerConfigTest {
         assertTrue(span.spanContext.traceFlags.isSampled)
     }
 
+    /** Non-empty declarative file beats env when DSL omits sampler (File > Env). */
+    @Test
+    fun declarativeFileBeatsEnvWhenDslOmitsSampler() {
+        val span = startSpan(
+            getEnvVar = env("always_on"),
+            declarativeFile = fileSampler(SamplerBehavior.AlwaysOff),
+        )
+        assertFalse(span.isRecording())
+        assertFalse(span.spanContext.traceFlags.isSampled)
+    }
+
     /** DSL outranks file and env. */
     @Test
     fun dslSamplerWinsOverDeclarativeFile() {
@@ -138,5 +173,23 @@ internal class CompatResolvedSamplerConfigTest {
         }
         assertTrue(span.isRecording())
         assertTrue(span.spanContext.traceFlags.isSampled)
+    }
+
+    /** Unknown OTEL_TRACES_SAMPLER reports warning and keeps Java default (samples roots). */
+    @Test
+    fun invalidEnvSamplerReportsWarningAndKeepsDefault() {
+        val handler = FakeSdkErrorHandler()
+        val span = startSpan(
+            getEnvVar = env("not_a_sampler"),
+            errorHandler = handler,
+        )
+
+        assertTrue(span.isRecording())
+        assertTrue(span.spanContext.traceFlags.isSampled)
+
+        assertEquals(1, handler.apiMisuses.size)
+        val misuse = handler.apiMisuses.single()
+        assertEquals("OTEL_TRACES_SAMPLER", misuse.api)
+        assertEquals(SdkErrorSeverity.WARNING, misuse.severity)
     }
 }

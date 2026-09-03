@@ -7,9 +7,8 @@ import io.opentelemetry.kotlin.attributes.AttributesMutator
 import io.opentelemetry.kotlin.attributes.CompatAttributesModel
 import io.opentelemetry.kotlin.attributes.setTypedAttributes
 import io.opentelemetry.kotlin.behavior.OpenTelemetryBehavior
-import io.opentelemetry.kotlin.behavior.TracerProviderBehavior
 import io.opentelemetry.kotlin.config.envar.EnvVarReader
-import io.opentelemetry.kotlin.config.envar.tracing.SamplerEnvVars
+import io.opentelemetry.kotlin.config.envar.OpenTelemetryEnvVars
 import io.opentelemetry.kotlin.error.GuardedSdkErrorHandler
 import io.opentelemetry.kotlin.error.NoopSdkErrorHandler
 import io.opentelemetry.kotlin.error.SdkError
@@ -84,25 +83,24 @@ internal class CompatOpenTelemetryConfig(
 
     internal fun applyResolvedSampler() {
         tracerProviderConfig.applyResolvedSampler(
-            envVars = envSamplerLayer(),
+            envVars = envBehaviorLayer(),
             declarativeFile = declarativeFileBehavior,
         )
     }
 
-    private fun envSamplerLayer(): OpenTelemetryBehavior? {
-        val sampler = SamplerEnvVars(EnvVarReader(getEnvVar)) { message ->
-            sdkErrorHandler.reportError(
-                SdkError.ApiMisuse(
-                    api = "OTEL_TRACES_SAMPLER",
-                    message = message,
-                    severity = SdkErrorSeverity.WARNING,
+    private fun envBehaviorLayer(): OpenTelemetryBehavior =
+        OpenTelemetryEnvVars(
+            EnvVarReader(getEnvVar),
+            onSamplerWarning = { message ->
+                sdkErrorHandler.reportError(
+                    SdkError.ApiMisuse(
+                        api = "OTEL_TRACES_SAMPLER",
+                        message = message,
+                        severity = SdkErrorSeverity.WARNING,
+                    )
                 )
-            )
-        }.toBehavior() ?: return null
-        return OpenTelemetryBehavior(
-            tracerProvider = TracerProviderBehavior(sampler = sampler),
-        )
-    }
+            },
+        ).toBehavior()
 
     override fun context(action: ContextConfigDsl.() -> Unit) {
         // no-op
