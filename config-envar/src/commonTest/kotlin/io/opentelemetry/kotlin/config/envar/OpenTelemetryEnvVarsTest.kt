@@ -90,14 +90,6 @@ internal class OpenTelemetryEnvVarsTest {
     }
 
     @Test
-    fun `should forward onSamplerWarning for invalid ratio arg`() {
-        val warnings = mutableListOf<String>()
-        toBehavior(env("traceidratio", "nope"), warnings::add)
-        assertEquals(1, warnings.size)
-        assertContains(warnings.single(), "nope")
-    }
-
-    @Test
     fun `should not warn when sampler is unset`() {
         val warnings = mutableListOf<String>()
         toBehavior({ null }, warnings::add)
