@@ -4,7 +4,6 @@ import io.opentelemetry.kotlin.ExperimentalApi
 import io.opentelemetry.kotlin.behavior.SamplerBehavior
 import io.opentelemetry.kotlin.config.schema.model.ParentBasedSampler
 import io.opentelemetry.kotlin.config.schema.model.Sampler
-import io.opentelemetry.kotlin.config.schema.model.TraceIdRatioBasedSampler
 
 /**
  * Maps the `tracer_provider.sampler` section of a declarative config file onto the behavior it
