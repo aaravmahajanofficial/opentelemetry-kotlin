@@ -4,6 +4,7 @@ import io.opentelemetry.kotlin.behavior.AttributeLimitsBehavior
 import io.opentelemetry.kotlin.behavior.LogLimitsBehavior
 import io.opentelemetry.kotlin.behavior.LoggerProviderBehavior
 import io.opentelemetry.kotlin.behavior.OpenTelemetryBehavior
+import io.opentelemetry.kotlin.behavior.SamplerBehavior
 import io.opentelemetry.kotlin.behavior.SpanLimitsBehavior
 import io.opentelemetry.kotlin.behavior.TracerProviderBehavior
 import kotlin.test.Test
@@ -89,6 +90,20 @@ internal class OpenTelemetryEnvVarsTest {
             loggerProvider = LoggerProviderBehavior(logLimits = LogLimitsBehavior()),
         )
         assertEquals(expected, toBehavior { null })
+    }
+
+    @Test
+    fun `should map sampler env vars`() {
+        val env = mapOf(
+            "OTEL_TRACES_SAMPLER" to "always_off",
+        )
+        val behavior = toBehavior(env::get)
+        assertEquals(SamplerBehavior.AlwaysOff, behavior.tracerProvider?.sampler)
+    }
+
+    @Test
+    fun `should leave sampler unset when OTEL_TRACES_SAMPLER is unset`() {
+        assertEquals(null, toBehavior { null }.tracerProvider?.sampler)
     }
 
     private fun behaviorFrom(vars: Map<String, String>) =
