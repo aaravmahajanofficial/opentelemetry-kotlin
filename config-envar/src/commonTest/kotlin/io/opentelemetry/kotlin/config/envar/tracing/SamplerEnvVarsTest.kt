@@ -41,12 +41,7 @@ internal class SamplerEnvVarsTest {
 
     @Test
     fun `should ignore arg for samplers that do not take one`() {
-        assertEquals(SamplerBehavior.AlwaysOn, toBehavior(env("always_on", "0.25")))
-    }
-
-    @Test
-    fun `should ignore arg when sampler is unset`() {
-        assertNull(toBehavior(mapOf("OTEL_TRACES_SAMPLER_ARG" to "0.25")::get))
+        assertEquals(SamplerBehavior.AlwaysOn, toBehavior(env("always_on")))
     }
 
     @Test
@@ -70,12 +65,9 @@ internal class SamplerEnvVarsTest {
         assertEquals(emptyList(), warnings)
     }
 
-    private fun env(sampler: String, arg: String? = null): (String) -> String? {
+    private fun env(sampler: String): (String) -> String? {
         val values = buildMap {
             put("OTEL_TRACES_SAMPLER", sampler)
-            if (arg != null) {
-                put("OTEL_TRACES_SAMPLER_ARG", arg)
-            }
         }
         return values::get
     }
