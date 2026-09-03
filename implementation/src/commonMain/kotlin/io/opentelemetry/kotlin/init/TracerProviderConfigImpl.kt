@@ -4,6 +4,8 @@ import io.opentelemetry.kotlin.Clock
 import io.opentelemetry.kotlin.attributes.DEFAULT_ATTRIBUTE_LIMIT
 import io.opentelemetry.kotlin.attributes.DEFAULT_ATTRIBUTE_VALUE_LENGTH_LIMIT
 import io.opentelemetry.kotlin.behavior.AttributeLimitsBehavior
+import io.opentelemetry.kotlin.behavior.BehaviorResolverImpl
+import io.opentelemetry.kotlin.behavior.OpenTelemetryBehavior
 import io.opentelemetry.kotlin.error.SdkError
 import io.opentelemetry.kotlin.error.SdkErrorHandler
 import io.opentelemetry.kotlin.error.SdkErrorSeverity
@@ -20,6 +22,7 @@ import io.opentelemetry.kotlin.tracing.export.SpanProcessor
 import io.opentelemetry.kotlin.tracing.sampling.Sampler
 import io.opentelemetry.kotlin.tracing.sampling.alwaysOn
 import io.opentelemetry.kotlin.tracing.sampling.parentBased
+import io.opentelemetry.kotlin.tracing.sampling.toSampler
 
 internal class TracerProviderConfigImpl(
     private val clock: Clock,
@@ -34,6 +37,7 @@ internal class TracerProviderConfigImpl(
     private var tracerConfigurator: TracerConfigurator = TracerConfigurator {
         defaultTracerConfig
     }
+    private var samplerConfiguredByDsl = false
 
     override fun spanLimits(action: SpanLimitsConfigDsl.() -> Unit) {
         spanLimitsAction = action
@@ -54,6 +58,7 @@ internal class TracerProviderConfigImpl(
     }
 
     override fun sampler(action: SamplerConfigDsl.() -> Sampler) {
+        samplerConfiguredByDsl = true
         samplerAction = action
     }
 
@@ -72,6 +77,20 @@ internal class TracerProviderConfigImpl(
         samplerFactory = { spanFactory -> SamplerConfigImpl(spanFactory).samplerAction() },
         tracerConfigurator = tracerConfigurator,
     )
+
+    internal fun applyResolvedSampler(
+        envVars: OpenTelemetryBehavior?,
+        declarativeFile: OpenTelemetryBehavior?,
+    ) {
+        if (samplerConfiguredByDsl) return
+
+        val behavior = BehaviorResolverImpl()
+            .resolve(envVars, declarativeFile, dsl = null)
+            .tracerProvider
+            ?.sampler ?: return
+
+        samplerAction = { toSampler(behavior) }
+    }
 
     private class SamplerConfigImpl(override val spanFactory: SpanFactory) : SamplerConfigDsl
 
