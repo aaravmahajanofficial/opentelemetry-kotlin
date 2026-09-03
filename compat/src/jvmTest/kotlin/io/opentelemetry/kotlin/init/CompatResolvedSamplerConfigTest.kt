@@ -39,10 +39,9 @@ internal class CompatResolvedSamplerConfigTest {
         .getTracer("test")
         .startSpan("span")
 
-    private fun env(sampler: String, arg: String? = null): (String) -> String? {
+    private fun env(sampler: String): (String) -> String? {
         val values = buildMap {
             put("OTEL_TRACES_SAMPLER", sampler)
-            if (arg != null) put("OTEL_TRACES_SAMPLER_ARG", arg)
         }
         return values::get
     }
