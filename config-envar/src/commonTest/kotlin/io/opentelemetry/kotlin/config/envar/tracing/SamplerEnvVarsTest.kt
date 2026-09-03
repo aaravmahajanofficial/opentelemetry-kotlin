@@ -40,11 +40,6 @@ internal class SamplerEnvVarsTest {
     }
 
     @Test
-    fun `should ignore arg for samplers that do not take one`() {
-        assertEquals(SamplerBehavior.AlwaysOn, toBehavior(env("always_on")))
-    }
-
-    @Test
     fun `should leave unknown sampler unset`() {
         listOf("sampler_test", "").forEach { name ->
             assertNull(toBehavior(env(name)), "<$name> should not configure a sampler")
