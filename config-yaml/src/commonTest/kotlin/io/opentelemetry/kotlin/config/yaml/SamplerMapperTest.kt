@@ -34,53 +34,6 @@ internal class SamplerMapperTest {
     }
 
     /**
-     * Verifies that `trace_id_ratio_based` with a valid floating-point ratio
-     * correctly preserves that ratio in the Behavior IR.
-     */
-    @Test
-    fun mapsTraceIdRatioBased() {
-        assertEquals(
-            SamplerBehavior.TraceIdRatioBased(0.5),
-            Sampler(traceIdRatioBased = TraceIdRatioBasedSampler(0.5)).toBehavior()
-        )
-    }
-
-    /**
-     * Verifies that omitting the ratio (`trace_id_ratio_based: {}`) leaves `ratio = null` in the IR.
-     * The schema default of 1.0 is an SDK runtime default and must not be hardcoded in the behavior layer.
-     */
-    @Test
-    fun leavesOmittedRatioUnset() {
-        assertEquals(
-            SamplerBehavior.TraceIdRatioBased(ratio = null),
-            Sampler(traceIdRatioBased = TraceIdRatioBasedSampler()).toBehavior()
-        )
-    }
-
-    /**
-     * Boundary test: Verifies that ratio 0.0 is treated as a valid, explicitly configured ratio
-     * (drop all spans) rather than mistakenly being treated as unset or falsey.
-     */
-    @Test
-    fun preservesARatioOfZero() {
-        assertEquals(
-            SamplerBehavior.TraceIdRatioBased(ratio = 0.0),
-            Sampler(traceIdRatioBased = TraceIdRatioBasedSampler(ratio = 0.0)).toBehavior()
-        )
-    }
-
-    /**
-     * Boundary test: Verifies that ratio 1.0 is treated as an explicitly configured valid upper bound.
-     */
-    @Test
-    fun preservesARatioOfOne() {
-        assertEquals(
-            SamplerBehavior.TraceIdRatioBased(ratio = 1.0),
-            Sampler(traceIdRatioBased = TraceIdRatioBasedSampler(ratio = 1.0)).toBehavior()
-        )
-    }
-
-    /**
      * Error-handling test: Verifies that invalid ratios (< 0.0, > 1.0, NaN, Infinity) safely reject
      * the entire sampler as unset (`null`) instead of crashing or sampling at an erroneous rate.
      */
@@ -92,24 +45,6 @@ internal class SamplerMapperTest {
                 "<$value> should not configure a sampler"
             )
         }
-    }
-
-    /**
-     * Recursion test: Verifies that `parent_based` can contain a nested custom root sampler,
-     * proving that child samplers are recursively evaluated through `.toBehavior()`.
-     */
-    @Test
-    fun mapsParentBasedWithNestedRoot() {
-        val schema = Sampler(
-            parentBased = ParentBasedSampler(
-                root = Sampler(traceIdRatioBased = TraceIdRatioBasedSampler(0.01))
-            )
-        )
-
-        assertEquals(
-            SamplerBehavior.ParentBased(root = SamplerBehavior.TraceIdRatioBased(0.01)),
-            schema.toBehavior()
-        )
     }
 
     /**

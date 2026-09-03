@@ -14,11 +14,6 @@ class SamplerConfigDslImpl {
 
     fun alwaysOff(): SamplerBehavior = record(SamplerBehavior.AlwaysOff)
 
-    fun traceIdRatioBased(ratio: Double? = null): SamplerBehavior? {
-        if (ratio != null && ratio !in 0.0..1.0) return null
-        return record(SamplerBehavior.TraceIdRatioBased(ratio))
-    }
-
     fun parentBased(
         root: SamplerBehavior? = null,
         remoteParentSampled: SamplerBehavior? = null,

@@ -43,7 +43,6 @@ internal class OpenTelemetryEnvVarsTest {
                     attributeCountPerEventLimit = 7,
                     attributeCountPerLinkLimit = 8,
                 ),
-                sampler = SamplerBehavior.TraceIdRatioBased(ratio = 0.25)
             ),
             loggerProvider = LoggerProviderBehavior(
                 logLimits = LogLimitsBehavior(
