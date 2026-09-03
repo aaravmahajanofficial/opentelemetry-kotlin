@@ -5,9 +5,8 @@ import io.opentelemetry.kotlin.behavior.SamplerBehavior
 import io.opentelemetry.kotlin.config.envar.EnvVarReader
 
 /**
- * Maps `OTEL_TRACES_SAMPLER` and `OTEL_TRACES_SAMPLER_ARG` onto behavior.
+ * Maps `OTEL_TRACES_SAMPLER` onto behavior.
  * Unrecognized sampler names are ignored (and reported via [onWarning]).
- * Invalid ARG is ignored as if ARG were unset (ratio omitted → SDK default 1.0).
  *
  * https://opentelemetry.io/docs/specs/otel/configuration/sdk-environment-variables/#general-sdk-configuration
  */
