@@ -18,7 +18,6 @@ fun Sampler.toBehavior(): SamplerBehavior? {
     val mapped = listOfNotNull(
         alwaysOn?.let { SamplerBehavior.AlwaysOn },
         alwaysOff?.let { SamplerBehavior.AlwaysOff },
-        traceIdRatioBased?.toBehavior(),
         parentBased?.toBehavior()
     )
 
@@ -33,12 +32,3 @@ private fun ParentBasedSampler.toBehavior(): SamplerBehavior.ParentBased =
         localParentSampled = localParentSampled?.toBehavior(),
         localParentNotSampled = localParentNotSampled?.toBehavior()
     )
-
-private fun TraceIdRatioBasedSampler.toBehavior(): SamplerBehavior.TraceIdRatioBased? {
-    if (ratio != null && ratioOrUnset(ratio) == null) return null
-    return SamplerBehavior.TraceIdRatioBased(ratio = ratioOrUnset(ratio))
-}
-
-private fun ratioOrUnset(ratio: Double?): Double? {
-    return ratio?.takeIf { it in 0.0..1.0 }
-}
