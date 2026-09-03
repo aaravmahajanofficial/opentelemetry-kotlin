@@ -72,6 +72,5 @@ public final class io/opentelemetry/kotlin/tracing/sampling/CompatBuiltInSampler
 	public static final fun composite (Lio/opentelemetry/kotlin/init/SamplerConfigDsl;Lkotlin/jvm/functions/Function1;)Lio/opentelemetry/kotlin/tracing/sampling/Sampler;
 	public static final fun parentBased (Lio/opentelemetry/kotlin/init/SamplerConfigDsl;Lio/opentelemetry/kotlin/tracing/sampling/Sampler;Lio/opentelemetry/kotlin/tracing/sampling/Sampler;Lio/opentelemetry/kotlin/tracing/sampling/Sampler;Lio/opentelemetry/kotlin/tracing/sampling/Sampler;Lio/opentelemetry/kotlin/tracing/sampling/Sampler;)Lio/opentelemetry/kotlin/tracing/sampling/Sampler;
 	public static synthetic fun parentBased$default (Lio/opentelemetry/kotlin/init/SamplerConfigDsl;Lio/opentelemetry/kotlin/tracing/sampling/Sampler;Lio/opentelemetry/kotlin/tracing/sampling/Sampler;Lio/opentelemetry/kotlin/tracing/sampling/Sampler;Lio/opentelemetry/kotlin/tracing/sampling/Sampler;Lio/opentelemetry/kotlin/tracing/sampling/Sampler;ILjava/lang/Object;)Lio/opentelemetry/kotlin/tracing/sampling/Sampler;
-	public static final fun traceIdRatioBased (Lio/opentelemetry/kotlin/init/SamplerConfigDsl;D)Lio/opentelemetry/kotlin/tracing/sampling/Sampler;
 }
 

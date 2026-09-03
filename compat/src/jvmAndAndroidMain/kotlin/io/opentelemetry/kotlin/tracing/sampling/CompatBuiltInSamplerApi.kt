@@ -62,17 +62,6 @@ public fun SamplerConfigDsl.parentBased(
 )
 
 /**
- * Configures sampling so that a fraction [ratio] of traces are sampled, based on the trace ID.
- * [ratio] must be in `[0.0, 1.0]`. Delegates to the OpenTelemetry Java
- * `TraceIdRatioBased` sampler (last 8 bytes of the trace ID, `abs(id) < bound`).
- *
- * https://opentelemetry.io/docs/specs/otel/trace/sdk/#traceidratiobased
- */
-@ExperimentalApi
-public fun SamplerConfigDsl.traceIdRatioBased(ratio: Double): Sampler =
-    SamplerAdapter(OtelJavaSampler.traceIdRatioBased(ratio))
-
-/**
  * Configures sampling by delegating to a [ComposableSampler], using consistent probability
  * sampling over the OpenTelemetry TraceState `ot` `th`/`rv` sub-keys.
  *

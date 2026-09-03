@@ -30,20 +30,6 @@ internal class SamplerBehaviorMappingTest {
         assertEquals("AlwaysOffSampler", sampler.description)
     }
 
-    /** TraceIdRatioBased must map to Java's TraceIdRatioBased */
-    @Test
-    fun traceIdRatioBasedMapsToJavaTraceIdRatioBased() {
-        val sampler = samplerDsl.toSampler(SamplerBehavior.TraceIdRatioBased(0.5))
-        assertEquals(samplerDsl.traceIdRatioBased(0.5).description, sampler.description)
-    }
-
-    /** Null ratio must default to 1.0 */
-    @Test
-    fun omittedRatioBecomesOne() {
-        val sampler = samplerDsl.toSampler(SamplerBehavior.TraceIdRatioBased())
-        assertEquals(samplerDsl.traceIdRatioBased(1.0).description, sampler.description)
-    }
-
     /** Empty uses defaults */
     @Test
     fun emptyParentBasedUsesSchemaChildDefaults() {
@@ -52,15 +38,6 @@ internal class SamplerBehaviorMappingTest {
             samplerDsl.parentBased(root = samplerDsl.alwaysOn()).description,
             sampler.description
         )
-    }
-
-    /** Recursive resolution */
-    @Test
-    fun parentBasedRootIsMappedRecursively() {
-        val sampler = samplerDsl.toSampler(
-            SamplerBehavior.ParentBased(root = SamplerBehavior.TraceIdRatioBased(ratio = 0.0))
-        )
-        assertContains(sampler.description, "root:TraceIdRatioBased")
     }
 
     /** Omitted slots keep defaults */

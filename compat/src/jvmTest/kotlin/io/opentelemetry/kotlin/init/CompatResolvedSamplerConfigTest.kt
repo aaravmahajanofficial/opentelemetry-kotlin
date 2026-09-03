@@ -67,14 +67,6 @@ internal class CompatResolvedSamplerConfigTest {
         assertFalse(span.spanContext.traceFlags.isSampled)
     }
 
-    /** traceidratio + ARG=0 drops roots (Java TraceIdRatioBased). */
-    @Test
-    fun envTraceIdRatioZeroDrops() {
-        val span = startSpan(getEnvVar = env("traceidratio", "0"))
-        assertFalse(span.isRecording())
-        assertFalse(span.spanContext.traceFlags.isSampled)
-    }
-
     /** ALWAYS_ON is accepted (env names are case-insensitive). */
     @Test
     fun envSamplerNameIsCaseInsensitive() {
@@ -86,24 +78,6 @@ internal class CompatResolvedSamplerConfigTest {
     @Test
     fun envParentBasedAlwaysOnIsAppliedWhenDslOmitsSampler() {
         val span = startSpan(getEnvVar = env("parentbased_always_on"))
-        assertTrue(span.isRecording())
-        assertTrue(span.spanContext.traceFlags.isSampled)
-    }
-
-    /** parentbased_traceidratio + ARG=0 drops roots. */
-    @Test
-    fun envParentBasedTraceIdRatioZeroDrops() {
-        val span = startSpan(getEnvVar = env("parentbased_traceidratio", "0"))
-        assertFalse(span.isRecording())
-        assertFalse(span.spanContext.traceFlags.isSampled)
-    }
-
-    /**
-     * Invalid ARG is ignored; sampler stays. Spec default ratio is 1.0, so roots sample.
-     */
-    @Test
-    fun invalidSamplerArgKeepsSamplerWithDefaultRatio() {
-        val span = startSpan(getEnvVar = env("traceidratio", "not-a-ratio"))
         assertTrue(span.isRecording())
         assertTrue(span.spanContext.traceFlags.isSampled)
     }

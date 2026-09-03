@@ -8,7 +8,6 @@ import io.opentelemetry.kotlin.init.SamplerConfigDsl
 internal fun SamplerConfigDsl.toSampler(behavior: SamplerBehavior): Sampler = when (behavior) {
     SamplerBehavior.AlwaysOn -> alwaysOn()
     SamplerBehavior.AlwaysOff -> alwaysOff()
-    is SamplerBehavior.TraceIdRatioBased -> traceIdRatioBased(behavior.ratio ?: 1.0)
     is SamplerBehavior.ParentBased -> parentBased(
         root = behavior.root?.let { toSampler(it) } ?: alwaysOn(),
         remoteParentSampled = behavior.remoteParentSampled?.let { toSampler(it) } ?: alwaysOn(),
