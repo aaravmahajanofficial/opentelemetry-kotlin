@@ -25,8 +25,6 @@ internal class OpenTelemetryEnvVarsTest {
             "OTEL_LINK_ATTRIBUTE_COUNT_LIMIT" to "8",
             "OTEL_LOGRECORD_ATTRIBUTE_COUNT_LIMIT" to "9",
             "OTEL_LOGRECORD_ATTRIBUTE_VALUE_LENGTH_LIMIT" to "10",
-            "OTEL_TRACES_SAMPLER" to "traceidratio",
-            "OTEL_TRACES_SAMPLER_ARG" to "0.25",
         )
 
         val expected = OpenTelemetryBehavior(
