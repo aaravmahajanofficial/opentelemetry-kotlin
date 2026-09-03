@@ -122,13 +122,3 @@ public fun SamplerConfigDsl.composableAnnotating(
 public fun SamplerConfigDsl.composableRuleBased(
     block: ComposableRuleBasedConfigDsl.() -> Unit,
 ): ComposableSampler = ComposableRuleBasedConfigImpl(this).apply(block).buildSampler()
-
-/**
- * Configures sampling so that a fraction [ratio] of traces are sampled, based on the trace ID.
- *
- * [ratio] must be in `[0.0, 1.0]`.
- *
- * https://opentelemetry.io/docs/specs/otel/trace/sdk/#traceidratiobased
- */
-@ExperimentalApi
-public fun SamplerConfigDsl.traceIdRatioBased(ratio: Double): Sampler = TraceIdRatioBasedSampler(ratio)
