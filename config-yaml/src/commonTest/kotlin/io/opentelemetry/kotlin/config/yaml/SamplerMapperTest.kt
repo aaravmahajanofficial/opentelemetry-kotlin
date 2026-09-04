@@ -33,7 +33,7 @@ internal class SamplerMapperTest {
     }
 
     /**
-     * Field-wiring integrity test: Verifies that all 5 distinct delegates of `ParentBased` are correctly
+     * Verifies that all 5 distinct delegates of `ParentBased` are correctly
      * mapped to their corresponding IR fields without copy-paste or swapped-parameter bugs.
      */
     @Test
@@ -81,7 +81,7 @@ internal class SamplerMapperTest {
     }
 
     /**
-     * One-of validation test: Verifies that if YAML contains 2 or more conflicting sampler keys,
+     * Verifies that if YAML contains 2 or more conflicting sampler keys,
      * the mapper safely degrades to unset (`null`) rather than crashing the application.
      */
     @Test
