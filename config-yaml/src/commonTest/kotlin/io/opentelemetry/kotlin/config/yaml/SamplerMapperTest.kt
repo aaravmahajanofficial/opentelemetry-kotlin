@@ -10,6 +10,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertNull
 
 internal class SamplerMapperTest {
+
     /**
      * Verifies that declaring `always_on: {}` in YAML maps cleanly to [SamplerBehavior.AlwaysOn].
      */
