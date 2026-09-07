@@ -5,6 +5,7 @@ import io.opentelemetry.kotlin.behavior.AttributeLimitsBehavior
 import io.opentelemetry.kotlin.behavior.BehaviorResolver
 import io.opentelemetry.kotlin.behavior.BehaviorResolverImpl
 import io.opentelemetry.kotlin.behavior.OpenTelemetryBehavior
+import io.opentelemetry.kotlin.behavior.SpanLimitsBehavior
 import io.opentelemetry.kotlin.config.dsl.AttributeLimitsConfigDslImpl
 import io.opentelemetry.kotlin.error.GuardedSdkErrorHandler
 import io.opentelemetry.kotlin.error.NoopSdkErrorHandler
@@ -97,14 +98,17 @@ internal class OpenTelemetryConfigImpl(
     private fun resolveBehavior(): OpenTelemetryBehavior = behaviorResolver.resolve(
         envars = null,
         declarativeFile = null,
-        dsl = OpenTelemetryBehavior(attributeLimits = globalAttributeLimits.toBehavior()),
+        dsl = OpenTelemetryBehavior(attributeLimits = globalAttributeLimits.toBehavior(), tracerProvider = tracingConfig.toBehavior()),
     )
 
     private fun resolveAttributeLimits(): AttributeLimitsBehavior =
         resolveBehavior().attributeLimits ?: AttributeLimitsBehavior()
 
+    private fun resolveSpanLimits(): SpanLimitsBehavior =
+        resolveBehavior().tracerProvider?.spanLimits ?: SpanLimitsBehavior()
+
     internal fun generateTracingConfig() =
-        tracingConfig.generateTracingConfig(baseResource, resolveAttributeLimits())
+        tracingConfig.generateTracingConfig(baseResource, resolveAttributeLimits(), resolveSpanLimits())
 
     internal fun generateLoggingConfig() =
         loggingConfig.generateLoggingConfig(baseResource, resolveAttributeLimits())
