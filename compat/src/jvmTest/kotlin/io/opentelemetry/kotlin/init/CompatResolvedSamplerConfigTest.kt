@@ -1,5 +1,6 @@
 package io.opentelemetry.kotlin.init
 
+import io.opentelemetry.kotlin.behavior.AttributeLimitsBehavior
 import io.opentelemetry.kotlin.behavior.OpenTelemetryBehavior
 import io.opentelemetry.kotlin.behavior.SamplerBehavior
 import io.opentelemetry.kotlin.behavior.TracerProviderBehavior
@@ -21,6 +22,7 @@ internal class CompatResolvedSamplerConfigTest {
 
     private val clock = FakeClock()
     private val idGenerator = CompatIdGenerator()
+    private val noGlobalLimits = AttributeLimitsBehavior()
 
     private fun startSpan(
         getEnvVar: (String) -> String? = { null },
@@ -35,7 +37,7 @@ internal class CompatResolvedSamplerConfigTest {
         }
         tracerProvider(configure)
         applyResolvedSampler()
-    }.tracerProviderConfig.build(clock, idGenerator)
+    }.tracerProviderConfig.build(clock, idGenerator, globalLimits = noGlobalLimits)
         .getTracer("test")
         .startSpan("span")
 
