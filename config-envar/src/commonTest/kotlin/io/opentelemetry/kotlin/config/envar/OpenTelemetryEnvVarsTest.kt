@@ -94,7 +94,7 @@ internal class OpenTelemetryEnvVarsTest {
             tracerProvider = TracerProviderBehavior(spanLimits = SpanLimitsBehavior()),
             loggerProvider = LoggerProviderBehavior(logLimits = LogLimitsBehavior()),
         )
-        assertEquals(expected, toBehavior { null })
+        assertEquals(expected, toBehavior(getEnvVar = { null }))
     }
 
     @Test
@@ -108,7 +108,7 @@ internal class OpenTelemetryEnvVarsTest {
 
     @Test
     fun `should leave sampler unset when OTEL_TRACES_SAMPLER is unset`() {
-        assertEquals(null, toBehavior { null }.tracerProvider?.sampler)
+        assertNull(toBehavior(getEnvVar = { null }).tracerProvider?.sampler)
     }
 
     @Test
@@ -141,7 +141,7 @@ internal class OpenTelemetryEnvVarsTest {
     @Test
     fun `should not warn when sampler is unset`() {
         val warnings = mutableListOf<String>()
-        toBehavior({ null }, warnings::add)
+        toBehavior(getEnvVar = { null }, onSamplerWarning = warnings::add)
         assertTrue(warnings.isEmpty())
     }
 
