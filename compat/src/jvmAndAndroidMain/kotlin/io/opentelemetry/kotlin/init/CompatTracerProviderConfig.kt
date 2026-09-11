@@ -85,7 +85,9 @@ internal class CompatTracerProviderConfig(
         envVars: OpenTelemetryBehavior?,
         declarativeFile: OpenTelemetryBehavior?,
     ) {
-        if (samplerConfiguredByDsl) return
+        if (samplerConfiguredByDsl) {
+            return
+        }
 
         val behavior = BehaviorResolverImpl()
             .resolve(envVars, declarativeFile, null)

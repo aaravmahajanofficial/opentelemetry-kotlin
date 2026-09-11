@@ -6,7 +6,6 @@ import io.opentelemetry.kotlin.factory.CompatSpanFactory
 import io.opentelemetry.kotlin.factory.SpanFactory
 import io.opentelemetry.kotlin.init.SamplerConfigDsl
 import kotlin.test.Test
-import kotlin.test.assertContains
 import kotlin.test.assertEquals
 
 @OptIn(ExperimentalStdlibApi::class)
@@ -50,11 +49,12 @@ internal class SamplerBehaviorMappingTest {
         )
         assertEquals(
             "ParentBased{" +
-                    "root:AlwaysOffSampler," +
-                    "remoteParentSampled:AlwaysOnSampler," +
-                    "remoteParentNotSampled:AlwaysOffSampler," +
-                    "localParentSampled:AlwaysOnSampler," +
-                    "localParentNotSampled:AlwaysOffSampler" + "}", sampler.description
+                "root:AlwaysOffSampler," +
+                "remoteParentSampled:AlwaysOnSampler," +
+                "remoteParentNotSampled:AlwaysOffSampler," +
+                "localParentSampled:AlwaysOnSampler," +
+                "localParentNotSampled:AlwaysOffSampler" + "}",
+            sampler.description
         )
     }
 
