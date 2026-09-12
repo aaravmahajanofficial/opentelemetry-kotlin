@@ -91,16 +91,16 @@ internal class CompatTracerProviderConfig(
         override val spanFactory = CompatSpanFactory(CompatSpanContextFactory())
     }
 
-    override fun tracerConfigurator(configurator: TracerConfigurator) {
-        tracerConfigurator = configurator
-    }
-
     private fun setSampler(sampler: Sampler) {
         val otelJavaSampler = when (sampler) {
             is SamplerAdapter -> sampler.impl
             else -> OtelJavaSamplerAdapter(sampler)
         }
         builder.setSampler(otelJavaSampler)
+    }
+
+    override fun tracerConfigurator(configurator: TracerConfigurator) {
+        tracerConfigurator = configurator
     }
 
     private fun applyTracerConfigurator(configurator: TracerConfigurator) {
