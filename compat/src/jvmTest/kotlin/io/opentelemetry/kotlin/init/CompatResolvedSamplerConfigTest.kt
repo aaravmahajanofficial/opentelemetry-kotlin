@@ -1,10 +1,9 @@
 package io.opentelemetry.kotlin.init
 
 import io.opentelemetry.kotlin.behavior.AttributeLimitsBehavior
-import io.opentelemetry.kotlin.behavior.OpenTelemetryBehavior
-import io.opentelemetry.kotlin.behavior.SamplerBehavior
-import io.opentelemetry.kotlin.behavior.TracerProviderBehavior
+import io.opentelemetry.kotlin.behavior.SpanLimitsBehavior
 import io.opentelemetry.kotlin.clock.FakeClock
+import io.opentelemetry.kotlin.config.envar.EnvVarReader
 import io.opentelemetry.kotlin.error.FakeSdkErrorHandler
 import io.opentelemetry.kotlin.error.SdkErrorHandler
 import io.opentelemetry.kotlin.error.SdkErrorSeverity
@@ -12,6 +11,7 @@ import io.opentelemetry.kotlin.factory.CompatIdGenerator
 import io.opentelemetry.kotlin.tracing.sampling.FakeSampler
 import io.opentelemetry.kotlin.tracing.sampling.SamplingResult
 import io.opentelemetry.kotlin.tracing.sampling.alwaysOn
+import java.io.File
 import kotlin.test.Test
 import kotlin.test.assertContains
 import kotlin.test.assertEquals
@@ -24,20 +24,26 @@ internal class CompatResolvedSamplerConfigTest {
     private val idGenerator = CompatIdGenerator()
     private val noGlobalLimits = AttributeLimitsBehavior()
 
+    private val noSpanLimits = SpanLimitsBehavior()
+
     private fun startSpan(
         getEnvVar: (String) -> String? = { null },
-        declarativeFile: OpenTelemetryBehavior? = null,
+        configYaml: String? = null,
         errorHandler: SdkErrorHandler? = null,
         configure: TracerProviderConfigDsl.() -> Unit = {},
-    ) = CompatOpenTelemetryConfig(clock).apply {
-        this.getEnvVar = getEnvVar
-        this.declarativeFileBehavior = declarativeFile
+    ) = CompatOpenTelemetryConfig(
+        clock,
+        envVarReader = EnvVarReader(getEnvVar),
+    ).apply {
         if (errorHandler != null) {
             errorHandler(errorHandler)
         }
+        if (configYaml != null) {
+            configFile(writeConfigFile(configYaml))
+        }
         tracerProvider(configure)
         applyResolvedSampler()
-    }.tracerProviderConfig.build(clock, idGenerator, globalLimits = noGlobalLimits)
+    }.tracerProviderConfig.build(clock, idGenerator, globalLimits = noGlobalLimits, spanLimits = noSpanLimits)
         .getTracer("test")
         .startSpan("span")
 
@@ -48,9 +54,12 @@ internal class CompatResolvedSamplerConfigTest {
         return values::get
     }
 
-    private fun fileSampler(sampler: SamplerBehavior) = OpenTelemetryBehavior(
-        tracerProvider = TracerProviderBehavior(sampler = sampler),
-    )
+    private fun writeConfigFile(contents: String): String {
+        val file = File.createTempFile("opentelemetry-config", ".yaml")
+        file.deleteOnExit()
+        file.writeText(contents)
+        return file.absolutePath
+    }
 
     /** Unset env/file: Java default ParentBased(AlwaysOn) samples roots. */
     @Test
@@ -83,6 +92,14 @@ internal class CompatResolvedSamplerConfigTest {
         assertTrue(span.spanContext.traceFlags.isSampled)
     }
 
+    /** OTEL_TRACES_SAMPLER=parentbased_always_off applies ParentBased(AlwaysOff root). */
+    @Test
+    fun envParentBasedAlwaysOffIsAppliedWhenDslOmitsSampler() {
+        val span = startSpan(getEnvVar = env("parentbased_always_off"))
+        assertFalse(span.isRecording())
+        assertFalse(span.spanContext.traceFlags.isSampled)
+    }
+
     /** sampler { alwaysOn() } outranks OTEL_TRACES_SAMPLER=always_off. */
     @Test
     fun dslSamplerWinsOverEnv() {
@@ -106,33 +123,33 @@ internal class CompatResolvedSamplerConfigTest {
         assertFalse(span.spanContext.traceFlags.isSampled)
     }
 
-    /** Injected file IR is applied when DSL omits sampler. */
+    /** configFile() YAML sampler is applied when DSL omits sampler. */
     @Test
-    fun declarativeFileSamplerIsAppliedWhenDslOmitsSampler() {
-        val span = startSpan(declarativeFile = fileSampler(SamplerBehavior.AlwaysOff))
+    fun configFileSamplerIsAppliedWhenDslOmitsSampler() {
+        val span = startSpan(configYaml = ALWAYS_OFF_SAMPLER_FILE)
         assertFalse(span.isRecording())
     }
 
     /**
-     * A non-null file layer, even empty, replaces env (BehaviorResolver: file ?: env).
-     * Empty file has no sampler → Java default samples.
+     * A config file, even without a sampler, replaces env
+     * (BehaviorResolver: file ?: env).
      */
     @Test
-    fun emptyDeclarativeFileReplacesEnvSampler() {
+    fun emptyConfigFileReplacesEnvSampler() {
         val span = startSpan(
             getEnvVar = env("always_off"),
-            declarativeFile = OpenTelemetryBehavior(),
+            configYaml = EMPTY_CONFIG_FILE,
         )
         assertTrue(span.isRecording())
         assertTrue(span.spanContext.traceFlags.isSampled)
     }
 
-    /** Non-empty declarative file beats env when DSL omits sampler (File > Env). */
+    /** Non-empty config file beats env when DSL omits sampler (File > Env). */
     @Test
-    fun declarativeFileBeatsEnvWhenDslOmitsSampler() {
+    fun configFileBeatsEnvWhenDslOmitsSampler() {
         val span = startSpan(
             getEnvVar = env("always_on"),
-            declarativeFile = fileSampler(SamplerBehavior.AlwaysOff),
+            configYaml = ALWAYS_OFF_SAMPLER_FILE,
         )
         assertFalse(span.isRecording())
         assertFalse(span.spanContext.traceFlags.isSampled)
@@ -140,10 +157,10 @@ internal class CompatResolvedSamplerConfigTest {
 
     /** DSL outranks file and env. */
     @Test
-    fun dslSamplerWinsOverDeclarativeFile() {
+    fun dslSamplerWinsOverConfigFile() {
         val span = startSpan(
             getEnvVar = env("always_off"),
-            declarativeFile = fileSampler(SamplerBehavior.AlwaysOff),
+            configYaml = ALWAYS_OFF_SAMPLER_FILE,
         ) {
             sampler { alwaysOn() }
         }
@@ -168,5 +185,18 @@ internal class CompatResolvedSamplerConfigTest {
         assertEquals("OTEL_TRACES_SAMPLER", misuse.api)
         assertContains(misuse.message, "not_a_sampler")
         assertEquals(SdkErrorSeverity.WARNING, misuse.severity)
+    }
+
+    private companion object {
+        val EMPTY_CONFIG_FILE = """
+            file_format: "1.0"
+        """.trimIndent()
+        val ALWAYS_OFF_SAMPLER_FILE = """
+            file_format: "1.0"
+            tracer_provider:
+              processors: []
+              sampler:
+                always_off: {}
+        """.trimIndent()
     }
 }

@@ -11,7 +11,6 @@ import io.opentelemetry.kotlin.behavior.OpenTelemetryBehavior
 import io.opentelemetry.kotlin.behavior.SpanLimitsBehavior
 import io.opentelemetry.kotlin.config.dsl.AttributeLimitsConfigDslImpl
 import io.opentelemetry.kotlin.config.envar.EnvVarReader
-import io.opentelemetry.kotlin.config.envar.OpenTelemetryEnvVars
 import io.opentelemetry.kotlin.error.GuardedSdkErrorHandler
 import io.opentelemetry.kotlin.error.NoopSdkErrorHandler
 import io.opentelemetry.kotlin.error.SdkError
@@ -32,7 +31,8 @@ import kotlin.concurrent.Volatile
 @ExperimentalApi
 internal class CompatOpenTelemetryConfig(
     clock: Clock,
-    private val behaviorReader: CompatBehaviorReader = defaultCompatBehaviorReader(),
+    envVarReader: EnvVarReader = EnvVarReader { System.getenv(it) },
+    suppliedBehaviorReader: CompatBehaviorReader? = null,
 ) : OpenTelemetryConfigDsl {
 
     @Volatile private var configuredErrorHandler: SdkErrorHandler = NoopSdkErrorHandler
@@ -43,8 +43,10 @@ internal class CompatOpenTelemetryConfig(
     internal val meterProviderConfig = CompatMeterProviderConfig(clock)
     private val globalAttributeLimits = AttributeLimitsConfigDslImpl()
     internal val propagatorCfg = CompatPropagatorConfigImpl()
-    internal var getEnvVar: (String) -> String? = { System.getenv(it) }
-    internal var declarativeFileBehavior: OpenTelemetryBehavior? = null
+    private val behaviorReader: CompatBehaviorReader = suppliedBehaviorReader ?: defaultCompatBehaviorReader(
+        envVarReader = envVarReader,
+        onSamplerWarning = ::reportSamplerWarning,
+    )
 
     private var customIdGenerator: (() -> IdGenerator)? = null
 
@@ -88,25 +90,8 @@ internal class CompatOpenTelemetryConfig(
     }
 
     internal fun applyResolvedSampler() {
-        tracerProviderConfig.applyResolvedSampler(
-            envVars = envBehaviorLayer(),
-            declarativeFile = declarativeFileBehavior,
-        )
+        tracerProviderConfig.applyResolvedSampler(resolvedBehavior.tracerProvider?.sampler)
     }
-
-    private fun envBehaviorLayer(): OpenTelemetryBehavior =
-        OpenTelemetryEnvVars(
-            EnvVarReader(getEnvVar),
-            onSamplerWarning = { message ->
-                sdkErrorHandler.reportError(
-                    SdkError.ApiMisuse(
-                        api = "OTEL_TRACES_SAMPLER",
-                        message = message,
-                        severity = SdkErrorSeverity.WARNING,
-                    )
-                )
-            },
-        ).toBehavior()
 
     override fun context(action: ContextConfigDsl.() -> Unit) {
         // no-op
@@ -156,4 +141,14 @@ internal class CompatOpenTelemetryConfig(
 
     internal fun resolveSpanLimits(): SpanLimitsBehavior =
         resolvedBehavior.tracerProvider?.spanLimits ?: SpanLimitsBehavior()
+
+    private fun reportSamplerWarning(message: String) {
+        sdkErrorHandler.reportError(
+            SdkError.ApiMisuse(
+                api = "OTEL_TRACES_SAMPLER",
+                message = message,
+                severity = SdkErrorSeverity.WARNING,
+            )
+        )
+    }
 }
