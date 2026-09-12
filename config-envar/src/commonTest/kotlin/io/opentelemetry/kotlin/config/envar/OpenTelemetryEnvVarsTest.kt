@@ -125,7 +125,7 @@ internal class OpenTelemetryEnvVarsTest {
 
     @Test
     fun `should leave processor unset when exporter env vars are unset`() {
-        val behavior = toBehavior { null }
+        val behavior = toBehavior(getEnvVar = { null })
         assertEquals(null, behavior.tracerProvider?.processor)
         assertEquals(null, behavior.loggerProvider?.processor)
     }
