@@ -5,13 +5,20 @@ import io.opentelemetry.kotlin.behavior.AttributeLimitsBehavior
 import io.opentelemetry.kotlin.behavior.OpenTelemetryBehavior
 import io.opentelemetry.kotlin.behavior.SpanLimitsBehavior
 import io.opentelemetry.kotlin.config.dsl.AttributeLimitsConfigDslImpl
+import io.opentelemetry.kotlin.config.envar.EnvVarReader
+import io.opentelemetry.kotlin.config.envar.OpenTelemetryEnvVars
 import io.opentelemetry.kotlin.error.GuardedSdkErrorHandler
 import io.opentelemetry.kotlin.error.NoopSdkErrorHandler
+import io.opentelemetry.kotlin.error.SdkError
 import io.opentelemetry.kotlin.error.SdkErrorHandler
+import io.opentelemetry.kotlin.error.SdkErrorSeverity
+import io.opentelemetry.kotlin.error.reportError
 import io.opentelemetry.kotlin.factory.IdGenerator
 import io.opentelemetry.kotlin.factory.IdGeneratorImpl
 import io.opentelemetry.kotlin.factory.ResourceFactory
 import io.opentelemetry.kotlin.factory.ResourceFactoryImpl
+import io.opentelemetry.kotlin.getEnvVarValue
+import io.opentelemetry.kotlin.init.config.TracingConfig
 import io.opentelemetry.kotlin.propagation.TextMapPropagator
 import io.opentelemetry.kotlin.resource.detectResource
 import kotlin.concurrent.Volatile
@@ -36,6 +43,8 @@ internal class OpenTelemetryConfigImpl(
     internal val metricsConfig: MeterProviderConfigImpl = MeterProviderConfigImpl(sdkErrorHandler)
     internal val contextConfig: ContextConfigImpl = ContextConfigImpl()
     internal val propagatorCfg: PropagatorConfigImpl = PropagatorConfigImpl()
+    internal var getEnvVar: (String) -> String? = ::getEnvVarValue
+    internal var declarativeFileBehavior: OpenTelemetryBehavior? = null
     private val globalAttributeLimits = AttributeLimitsConfigDslImpl()
     private val resourceDetectionConfig = ResourceDetectionConfigImpl()
 
@@ -110,8 +119,27 @@ internal class OpenTelemetryConfigImpl(
     private fun resolveSpanLimits(): SpanLimitsBehavior =
         resolvedBehavior.tracerProvider?.spanLimits ?: SpanLimitsBehavior()
 
-    internal fun generateTracingConfig() =
-        tracingConfig.generateTracingConfig(baseResource, resolveAttributeLimits(), resolveSpanLimits())
+    internal fun generateTracingConfig(): TracingConfig {
+        tracingConfig.applyResolvedSampler(
+            envVars = envBehaviorLayer(),
+            declarativeFile = declarativeFileBehavior,
+        )
+        return tracingConfig.generateTracingConfig(baseResource, resolveAttributeLimits(), resolveSpanLimits())
+    }
+
+    private fun envBehaviorLayer(): OpenTelemetryBehavior =
+        OpenTelemetryEnvVars(
+            EnvVarReader(getEnvVar),
+            onSamplerWarning = { message ->
+                sdkErrorHandler.reportError(
+                    SdkError.ApiMisuse(
+                        api = "OTEL_TRACES_SAMPLER",
+                        message = message,
+                        severity = SdkErrorSeverity.WARNING,
+                    )
+                )
+            },
+        ).toBehavior()
 
     internal fun generateLoggingConfig() =
         loggingConfig.generateLoggingConfig(baseResource, resolveAttributeLimits())

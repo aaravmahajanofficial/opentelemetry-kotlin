@@ -18,6 +18,7 @@ kotlin {
                 implementation(project(":config-dsl"))
                 implementation(project(":model"))
                 implementation(project(":java-typealiases"))
+                implementation(project(":config-envar"))
                 implementation(libs.kotlinx.coroutines)
                 implementation(project.dependencies.platform(libs.opentelemetry.bom))
                 implementation(project.dependencies.platform(libs.opentelemetry.bom.alpha))
