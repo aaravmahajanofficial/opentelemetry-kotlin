@@ -4,8 +4,7 @@ import io.opentelemetry.kotlin.Clock
 import io.opentelemetry.kotlin.attributes.DEFAULT_ATTRIBUTE_LIMIT
 import io.opentelemetry.kotlin.attributes.DEFAULT_ATTRIBUTE_VALUE_LENGTH_LIMIT
 import io.opentelemetry.kotlin.behavior.AttributeLimitsBehavior
-import io.opentelemetry.kotlin.behavior.BehaviorResolverImpl
-import io.opentelemetry.kotlin.behavior.OpenTelemetryBehavior
+import io.opentelemetry.kotlin.behavior.SamplerBehavior
 import io.opentelemetry.kotlin.behavior.SpanLimitsBehavior
 import io.opentelemetry.kotlin.behavior.TracerProviderBehavior
 import io.opentelemetry.kotlin.config.dsl.SpanLimitsConfigDslImpl
@@ -82,19 +81,10 @@ internal class TracerProviderConfigImpl(
         tracerConfigurator = tracerConfigurator,
     )
 
-    internal fun applyResolvedSampler(
-        envVars: OpenTelemetryBehavior?,
-        declarativeFile: OpenTelemetryBehavior?,
-    ) {
-        if (samplerConfiguredByDsl) {
+    internal fun applyResolvedSampler(behavior: SamplerBehavior?) {
+        if (samplerConfiguredByDsl || behavior == null) {
             return
         }
-
-        val behavior = BehaviorResolverImpl()
-            .resolve(envVars, declarativeFile, dsl = null)
-            .tracerProvider
-            ?.sampler ?: return
-
         samplerAction = { toSampler(behavior) }
     }
 
