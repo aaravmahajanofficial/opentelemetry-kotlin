@@ -130,6 +130,7 @@ internal class OpenTelemetryConfigImpl(
         tracingConfig.applyResolvedSampler(resolvedBehavior.tracerProvider?.sampler)
         return tracingConfig.generateTracingConfig(baseResource, resolveAttributeLimits(), resolveSpanLimits())
     }
+
     private fun reportSamplerWarning(message: String) {
         sdkErrorHandler.reportError(
             SdkError.ApiMisuse(
