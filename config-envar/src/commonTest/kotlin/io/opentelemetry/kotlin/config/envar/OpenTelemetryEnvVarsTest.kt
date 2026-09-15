@@ -131,7 +131,7 @@ internal class OpenTelemetryEnvVarsTest {
     }
 
     @Test
-    fun `should forward onSamplerWarning for unknown sampler`() {
+    fun `should forward onWarning for unknown sampler`() {
         val warnings = mutableListOf<String>()
         toBehavior(env("not_a_sampler"), warnings::add)
         assertEquals(1, warnings.size)
@@ -141,7 +141,7 @@ internal class OpenTelemetryEnvVarsTest {
     @Test
     fun `should not warn when sampler is unset`() {
         val warnings = mutableListOf<String>()
-        toBehavior(getEnvVar = { null }, onSamplerWarning = warnings::add)
+        toBehavior(getEnvVar = { null }, onWarning = warnings::add)
         assertTrue(warnings.isEmpty())
     }
 
@@ -157,7 +157,7 @@ internal class OpenTelemetryEnvVarsTest {
 
     private fun toBehavior(
         getEnvVar: (String) -> String?,
-        onSamplerWarning: (String) -> Unit = {},
+        onWarning: (String) -> Unit = {},
     ): OpenTelemetryBehavior =
-        OpenTelemetryEnvVars(EnvVarReader(getEnvVar), onSamplerWarning).toBehavior()
+        OpenTelemetryEnvVars(EnvVarReader(getEnvVar), onWarning).toBehavior()
 }

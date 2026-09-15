@@ -9,10 +9,7 @@ import io.opentelemetry.kotlin.config.dsl.AttributeLimitsConfigDslImpl
 import io.opentelemetry.kotlin.config.envar.EnvVarReader
 import io.opentelemetry.kotlin.error.GuardedSdkErrorHandler
 import io.opentelemetry.kotlin.error.NoopSdkErrorHandler
-import io.opentelemetry.kotlin.error.SdkError
 import io.opentelemetry.kotlin.error.SdkErrorHandler
-import io.opentelemetry.kotlin.error.SdkErrorSeverity
-import io.opentelemetry.kotlin.error.reportError
 import io.opentelemetry.kotlin.factory.IdGenerator
 import io.opentelemetry.kotlin.factory.IdGeneratorImpl
 import io.opentelemetry.kotlin.factory.ResourceFactory
@@ -48,7 +45,7 @@ internal class OpenTelemetryConfigImpl(
     private val resourceDetectionConfig = ResourceDetectionConfigImpl()
     private val behaviorReader: BehaviorReader = suppliedBehaviorReader ?: defaultBehaviorReader(
         envVarReader = envVarReader,
-        onSamplerWarning = ::reportSamplerWarning,
+        sdkErrorHandler = sdkErrorHandler,
     )
 
     private var customIdGenerator: (() -> IdGenerator)? = null
@@ -129,16 +126,6 @@ internal class OpenTelemetryConfigImpl(
     internal fun generateTracingConfig(): TracingConfig {
         tracingConfig.applyResolvedSampler(resolvedBehavior.tracerProvider?.sampler)
         return tracingConfig.generateTracingConfig(baseResource, resolveAttributeLimits(), resolveSpanLimits())
-    }
-
-    private fun reportSamplerWarning(message: String) {
-        sdkErrorHandler.reportError(
-            SdkError.ApiMisuse(
-                api = "OTEL_TRACES_SAMPLER",
-                message = message,
-                severity = SdkErrorSeverity.WARNING,
-            )
-        )
     }
 
     internal fun generateLoggingConfig() =

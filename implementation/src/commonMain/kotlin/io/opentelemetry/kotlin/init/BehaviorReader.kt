@@ -3,6 +3,8 @@ package io.opentelemetry.kotlin.init
 import io.opentelemetry.kotlin.behavior.OpenTelemetryBehavior
 import io.opentelemetry.kotlin.config.OpenTelemetryConfigReader
 import io.opentelemetry.kotlin.config.envar.EnvVarReader
+import io.opentelemetry.kotlin.error.NoopSdkErrorHandler
+import io.opentelemetry.kotlin.error.SdkErrorHandler
 import io.opentelemetry.kotlin.getEnvVarValue
 
 /**
@@ -17,11 +19,11 @@ internal fun interface BehaviorReader {
  */
 internal fun defaultBehaviorReader(
     envVarReader: EnvVarReader = EnvVarReader(::getEnvVarValue),
-    onSamplerWarning: (String) -> Unit = {},
+    sdkErrorHandler: SdkErrorHandler = NoopSdkErrorHandler,
 ): BehaviorReader {
     val configReader = OpenTelemetryConfigReader(
         envVarReader = envVarReader,
-        onSamplerWarning = onSamplerWarning,
+        sdkErrorHandler = sdkErrorHandler,
     )
     return BehaviorReader { configFilePath, dsl ->
         configReader.read(dsl = dsl, configFilePath = configFilePath)
