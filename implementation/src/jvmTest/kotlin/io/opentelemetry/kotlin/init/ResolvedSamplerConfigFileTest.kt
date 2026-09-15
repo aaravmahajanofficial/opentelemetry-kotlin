@@ -32,16 +32,17 @@ internal class ResolvedSamplerConfigFileTest {
         configYaml: String? = null,
         configure: TracerProviderConfigDsl.() -> Unit = {},
     ): Sampler {
-        val cfg = OpenTelemetryConfigImpl(
-            clock,
-            envVarReader = EnvVarReader(getEnvVar),
-        ).apply {
+        val cfg = OpenTelemetryConfigImpl(clock).apply {
             if (configYaml != null) {
                 configFile(writeConfigFile(configYaml))
             }
             tracerProvider(configure)
         }
-        return cfg.generateTracingConfig().samplerFactory(spanFactory)
+        val behavior = defaultBehaviorReader(
+            envVarReader = EnvVarReader(getEnvVar),
+            sdkErrorHandler = cfg.sdkErrorHandler,
+        ).read(cfg.configFilePath, cfg.toBehavior())
+        return SdkConfigFactory(cfg, behavior).generateTracingConfig().samplerFactory(spanFactory)
     }
 
     private fun Sampler.shouldSampleRoot(): Decision = shouldSample(

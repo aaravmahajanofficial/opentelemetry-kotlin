@@ -10,6 +10,7 @@ import io.opentelemetry.kotlin.factory.ContextFactoryImpl
 import io.opentelemetry.kotlin.factory.IdGeneratorImpl
 import io.opentelemetry.kotlin.factory.SpanContextFactoryImpl
 import io.opentelemetry.kotlin.factory.SpanFactoryImpl
+import io.opentelemetry.kotlin.init.config.TracingConfig
 import io.opentelemetry.kotlin.tracing.SpanKind
 import io.opentelemetry.kotlin.tracing.sampling.FakeSampler
 import io.opentelemetry.kotlin.tracing.sampling.ParentBasedSampler
@@ -35,15 +36,19 @@ internal class ResolvedSamplerConfigTest {
         getEnvVar: (String) -> String? = { null },
         errorHandler: SdkErrorHandler? = null,
         configure: TracerProviderConfigDsl.() -> Unit,
-    ) = OpenTelemetryConfigImpl(
-        clock,
-        envVarReader = EnvVarReader(getEnvVar),
-    ).apply {
-        if (errorHandler != null) {
-            errorHandler(errorHandler)
+    ): TracingConfig {
+        val cfg = OpenTelemetryConfigImpl(clock).apply {
+            if (errorHandler != null) {
+                errorHandler(errorHandler)
+            }
+            tracerProvider(configure)
         }
-        tracerProvider(configure)
-    }.generateTracingConfig()
+        val behavior = defaultBehaviorReader(
+            envVarReader = EnvVarReader(getEnvVar),
+            sdkErrorHandler = cfg.sdkErrorHandler,
+        ).read(cfg.configFilePath, cfg.toBehavior())
+        return SdkConfigFactory(cfg, behavior).generateTracingConfig()
+    }
 
     private fun samplerOf(
         getEnvVar: (String) -> String? = { null },
