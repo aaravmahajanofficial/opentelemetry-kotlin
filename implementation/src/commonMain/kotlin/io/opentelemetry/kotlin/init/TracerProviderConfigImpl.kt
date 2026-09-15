@@ -33,8 +33,7 @@ internal class TracerProviderConfigImpl(
 ) : TracerProviderConfigDsl, ResourceConfigDsl by resourceConfigImpl {
 
     private var processor: SpanProcessor? = null
-    private var samplerAction: SamplerConfigDsl.() -> Sampler = { parentBased(root = alwaysOn()) }
-    private var samplerConfiguredByDsl = false
+    private var samplerAction: (SamplerConfigDsl.() -> Sampler)? = null
     private val defaultTracerConfig = TracerConfigImpl(true)
     private var tracerConfigurator: TracerConfigurator = TracerConfigurator {
         defaultTracerConfig
@@ -60,7 +59,6 @@ internal class TracerProviderConfigImpl(
     }
 
     override fun sampler(action: SamplerConfigDsl.() -> Sampler) {
-        samplerConfiguredByDsl = true
         samplerAction = action
     }
 
@@ -72,17 +70,20 @@ internal class TracerProviderConfigImpl(
         base: Resource,
         globalLimits: AttributeLimitsBehavior,
         spanLimits: SpanLimitsBehavior,
-    ): TracingConfig = TracingConfig(
-        processor = processor,
-        spanLimits = generateSpanLimitsConfig(globalLimits, spanLimits),
-        resource = base.merge(resourceConfigImpl.generateResource()),
-        sdkErrorHandler = sdkErrorHandler,
-        samplerFactory = { spanFactory -> SamplerConfigImpl(spanFactory).samplerAction() },
-        tracerConfigurator = tracerConfigurator,
-    )
+    ): TracingConfig {
+        val action = samplerAction ?: { parentBased(root = alwaysOn()) }
+        return TracingConfig(
+            processor = processor,
+            spanLimits = generateSpanLimitsConfig(globalLimits, spanLimits),
+            resource = base.merge(resourceConfigImpl.generateResource()),
+            sdkErrorHandler = sdkErrorHandler,
+            samplerFactory = { spanFactory -> SamplerConfigImpl(spanFactory).action() },
+            tracerConfigurator = tracerConfigurator,
+        )
+    }
 
     internal fun applyResolvedSampler(behavior: SamplerBehavior?) {
-        if (samplerConfiguredByDsl || behavior == null) {
+        if (samplerAction != null || behavior == null) {
             return
         }
         samplerAction = { toSampler(behavior) }
